@@ -174,5 +174,10 @@ def createEntity(db,db_schema,entity_name,columns):
 
 def registerFunction(db,db_schema,iot_func):
     logger.info(f"Registering function {iot_func} with db={db}")
-    rc=db.register_functions([iot_func])
-    print(f"register rc={rc}")
+    
+    rc=db.register_functions([iot_func],raise_error=False)
+    if rc=='':
+        logger.info(f"Unregistering {iot_func.__name__}")
+        db.unregister_functions(iot_func.__name__)
+        rc=db.register_functions([iot_func],raise_error=False)
+    logger.info(f"register rc={rc}")

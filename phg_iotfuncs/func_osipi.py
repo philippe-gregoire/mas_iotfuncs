@@ -155,7 +155,7 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
             ui.UISingle(required=True, datatype=str, name='osipi_host', description='OSIPi server hostname'),
             ui.UISingle(required=True, datatype=int, name='osipi_port', description='OSIPi server host port'),
             ui.UISingle(required=True, datatype=str, name='osipi_user', description='OSIPi server userid'),
-            ui.UISingle(required=True, datatype=int, name='osipi_pass', description='OSIPi server password'),
+            ui.UISingle(required=True, datatype=str, name='osipi_pass', description='OSIPi server password'),
             ui.UISingle(required=True, datatype=str, name='name_filter', description='OSIPi Point name filter'),
             ui.UISingle(required=True, datatype=str, name='date_field', description='Field in the incoming JSON for event date (timestamp)', default='date'),
             # ui.UISingle(required=True, datatype=str, name='required_fields', description='Fields in the incoming JSON that are required for the payload to be retained'),
