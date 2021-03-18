@@ -1,0 +1,23 @@
+{
+  "EXAMPLE credentials file for IOTHUB":"FIXME",
+  "iot_hub_name": "AzureHubName",
+  "policy_name": "iothubowner",
+  "policies_access_keys": {
+    "iothubowner": ["PrimaryKeyFromHub_for_policy_iothubowber====",
+                    "SecondaryKeyFromHub====="
+    ],
+    "service": ["PrimaryKeyFromHub_for_policy_service===",
+                "SecondaryKeyFromHub_for_policy_service===",
+    ]
+  },
+  "consumer_group": "$Default",
+  "partition_id": 1,
+  "devices_access_keys":  {
+    "ChemFeedInst": ["PrimaryKey6Yq/AyvbYDDdlRQpEMs=",
+                 "SecondaryKey8uHshRfHnJclKXHZ5dXQ="],
+    "ProcessCont": ["PrimaryKeyb+ORs56wJ4P0=",
+                 "SecondaryKeycUq2lJtGh7/EIdup5o="],
+    "ChemLabo": ["PrimaryKeyep5nSe3nFpD6sEsg=",
+                 "SecondaryKey2TgKvu3qynE="]
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "EXAMPLE credentials file for Service Bus":"FIXME",
+  "Endpoint": "sb://XXXX.servicebus.windows.net/",
+  "SharedAccessKeyName": "ibmaccess",
+  "SharedAccessKey": "++qwertyuiopasdfghjklzxcvbnm==",
+  "EntityPath": "metrics"
+}
