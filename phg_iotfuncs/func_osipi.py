@@ -123,21 +123,22 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
     Do an OSI Pi Server read as a preload activity. Load results into the Entity Type time series table.
     """
 
-    def __init__(self, osipihost, osipiport, osipiuser, osipipass, 
-                 nameFilter,
-                 date_field,required_fields,
+    def __init__(self, osipi_host, osipi_port, osipi_user, osipi_pass, 
+                 name_filter,
+                 date_field,
+                #  required_fields,
                  osipi_preload_ok):
         super().__init__(osipi_preload_ok)
 
         # create an instance variable with the same name as each arg
         self.osipi_host = osipi_host
-        self.osipi_port = osipi_host
+        self.osipi_port = osipi_port
         self.osipi_user = osipi_user
         self.osipi_pass = osipi_pass
         self.name_filter = name_filter
         self.date_field=date_field.strip()
         # Make a set out of the required fields plus date
-        self.required_fields={r.strip() for r in required_fields.split(',')} | {self.date_field}
+        # self.required_fields={r.strip() for r in required_fields.split(',')} | {self.date_field}
         self.lastseq_constant=f"osipi_lastseq_{nameFilter.lower()}"
 
         self.osipi_preload_ok=osipi_preload_ok
@@ -152,12 +153,12 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
         # define arguments that behave as function inputs
         inputs = [
             ui.UISingle(required=True, datatype=str, name='osipi_host', description='OSIPi server hostname'),
-            ui.UISingle(required=True, datatype=str, name='osipi_host', description='OSIPi server host port'),
-            ui.UISingle(required=True, datatype=str, name='osipi_user', description='OSIPi server userid),
+            ui.UISingle(required=True, datatype=int, name='osipi_port', description='OSIPi server host port'),
+            ui.UISingle(required=True, datatype=str, name='osipi_user', description='OSIPi server userid'),
             ui.UISingle(required=True, datatype=int, name='osipi_pass', description='OSIPi server password'),
             ui.UISingle(required=True, datatype=str, name='name_filter', description='OSIPi Point name filter'),
             ui.UISingle(required=True, datatype=str, name='date_field', description='Field in the incoming JSON for event date (timestamp)', default='date'),
-            ui.UISingle(required=True, datatype=str, name='required_fields', description='Fields in the incoming JSON that are required for the payload to be retained'),
+            # ui.UISingle(required=True, datatype=str, name='required_fields', description='Fields in the incoming JSON that are required for the payload to be retained'),
         ]
 
         # define arguments that behave as function outputs
