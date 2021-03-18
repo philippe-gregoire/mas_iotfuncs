@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 def add_common_args(parser,argv):
     ''' Add creds_file and loglevel args '''
-    defCredsFile=default_creds_file(argv[0])
+    defCredsFile=default_creds_file(argv[0],'credentials_as')
     parser.add_argument('-creds_file', type=str,  help='Maximo Monitor credentials file',default=defCredsFile)
     def type_log_level(level):
         import argparse,logging
@@ -41,11 +41,11 @@ def add_common_args(parser,argv):
 def entity_main(argv,def_entity_name,def_ts_column,tags):
     ''' Entity creator main method '''
     import argparse
-    import utils
+
     parser = argparse.ArgumentParser(description=f"Entity Creator with float columns {tags}")
     parser.add_argument('-entity_name', type=str,  help=f"Name of the Entity, default to '{def_entity_name}'", default=def_entity_name)
     parser.add_argument('-ts_column', type=str,  help=f"timestamp column name, default to '{def_ts_column}'", default=def_ts_column)
-    utils.add_common_args(parser,argv)
+    add_common_args(parser,argv)
     args = parser.parse_args(argv[1:])
     logging.basicConfig(level=args.loglevel)
 
@@ -58,10 +58,20 @@ def entity_main(argv,def_entity_name,def_ts_column,tags):
 
     createEntity(db,db_schema,args.entity_name,columns)
 
-def default_creds_file(refPath):
+def load_creds_file(refPath,prefix):
+    creds_file=default_creds_file(refPath,prefix)
+    if not os.path.exists(creds_file):
+        print(f"Cannot find {creds_file} file")
+    import json,io,argparse
+    with io.open(creds_file,'r') as f:
+        j=json.load(f)
+        # return argparse.Namespace(**j)
+        return j
+
+def default_creds_file(refPath,prefix):
     ''' Default FQN of the maximo Monitor Analytics service credentials file wrt a given reference file or directory '''
     refPath=os.path.abspath(refPath)
-    return os.path.join(os.path.dirname(refPath) if os.path.isfile(refPath) else refPath,f"credentials_as_{os.environ['USERNAME']}.json")
+    return os.path.join(os.path.dirname(refPath) if os.path.isfile(refPath) else refPath,f"{prefix}_{os.environ['USERNAME']}.json")
 
 def setup_iotfunc(credsFileName,echoSQL=False,loglevel=logging.INFO):
     ''' Setup the iotfunction database from credentials

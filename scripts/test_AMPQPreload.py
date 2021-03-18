@@ -17,7 +17,7 @@ import logging,pprint
 from iotfunctions.enginelog import EngineLogging
 logger = logging.getLogger(__name__)
 
-import utils
+import script_utils
 
 def main(argv):
     '''
@@ -39,13 +39,13 @@ def main(argv):
 
     import azure.amqp_receiver as amqp_receiver
     amqp_receiver.add_iothub_args(parser)
-    utils.add_common_args(parser,argv)
+    script_utils.add_common_args(parser,argv)
     args = parser.parse_args(argv[1:])
 
     # logging.basicConfig(level=args.loglevel)
     EngineLogging.configure_console_logging(args.loglevel)
 
-    db,db_schema=utils.setup_iotfunc(args.creds_file,args.echo_sql)
+    db,db_schema=script_utils.setup_iotfunc(args.creds_file,args.echo_sql)
     # pprint.pprint(db.credentials)
 
     from phg_iotfuncs.func_amqp import AMQPPreload as TargetFunc
@@ -57,7 +57,7 @@ def main(argv):
                 args.consumer_group,args.partition_id,access_key,
                 args.device_id,args.date_field,required_fields)
     elif args.operation=='register':
-        utils.registerFunction(db,db_schema,TargetFunc)
+        script_utils.registerFunction(db,db_schema,TargetFunc)
     elif args.operation=='constant':
         from phg_iotfuncs import iotf_utils
         pprint.pprint(iotf_utils.getConstant(db, constant_name=None))

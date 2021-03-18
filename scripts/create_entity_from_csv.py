@@ -31,7 +31,7 @@ import sqlalchemy
 import iotfunctions
 
 # from custom import settings
-import utils
+import script_utils
 
 def main(argv):
     import argparse
@@ -39,13 +39,13 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Create Maximo Monitor Entity from CSV file')
     parser.add_argument('entity_name', type=str,  help='Name of the Entity to create')
     parser.add_argument('csv_file', type=str,  help='CSV file to use as input')
-    utils.add_common_args(parser,argv)
+    script_utils.add_common_args(parser,argv)
     args = parser.parse_args(argv[1:])
     logging.basicConfig(level=args.loglevel)
 
-    db,db_schema=utils.setup_iotfunc(args.creds_file,args.echo_sql)
+    db,db_schema=script_utils.setup_iotfunc(args.creds_file,args.echo_sql)
 
-    utils.createEntity(db,db_schema,args.entity_name,utils.inferTypesFromCSV(args.csv_file))
+    script_utils.createEntity(db,db_schema,args.entity_name,script_utils.inferTypesFromCSV(args.csv_file))
 
 if __name__ == "__main__":
     main(sys.argv)

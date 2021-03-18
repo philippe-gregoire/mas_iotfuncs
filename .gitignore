@@ -230,6 +230,6 @@ Icon?
 ehthumbs.db
 Thumbs.db
 COS/
-**/creds_iothub_*.json
-**/credentials_as_*json
+**/creds_*_*.json
+**/credentials_*_*json
 *.csv

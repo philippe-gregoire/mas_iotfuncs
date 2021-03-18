@@ -1,5 +1,5 @@
 # *****************************************************************************
-# # © Copyright IBM Corp. 2018.  All Rights Reserved.
+# # © Copyright IBM Corp. 2021.  All Rights Reserved.
 #
 # This program and the accompanying materials
 # are made available under the terms of the Apache V2.0
@@ -18,7 +18,7 @@ import sys,os, os.path, json
 import logging
 import sqlalchemy
 
-import utils
+import script_utils
 
 # CURRENT_TIMESTAMP='CURRENT TIMESTAMP' # DB2
 # CURRENT_DATE='CURRENT DATE' # DB2
@@ -50,11 +50,11 @@ def main(argv):
     parser.add_argument('-status', type=str, help='Handle log entries with given status', choices=['*']+SELECT_STATUS,default='ERROR')
     parser.add_argument('-limit', type=int, help='Number of logs to download', default=1)
     parser.add_argument('-filter', type=str, help='Filter to apply on the logs (e.g. phg_iotfuncs)',default=None)
-    utils.add_common_args(parser,argv)
+    script_utils.add_common_args(parser,argv)
     args = parser.parse_args(argv[1:])
     logging.basicConfig(level=args.loglevel)
 
-    db,db_schema=utils.setup_iotfunc(args.creds_file,args.echo_sql)
+    db,db_schema=script_utils.setup_iotfunc(args.creds_file,args.echo_sql)
 
     if args.entity_name=='*':
         entityMeta={'entityTypeId': '*',

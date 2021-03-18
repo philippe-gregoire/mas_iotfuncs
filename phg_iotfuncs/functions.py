@@ -6,7 +6,7 @@
 # which accompanies this distribution, and is available at
 # http://www.apache.org/licenses/LICENSE-2.0
 #
-# *****************************************************************************#
+# *****************************************************************************
 # Maximo Monitor IoT Test Functions
 # Includes a CSV preload, HelloWorld for testing
 #

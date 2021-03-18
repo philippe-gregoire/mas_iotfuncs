@@ -16,7 +16,7 @@ import sys,io
 import logging,pprint
 logger = logging.getLogger(__name__)
 
-import utils
+import script_utils
 
 def main(argv):
     '''
@@ -34,14 +34,14 @@ def main(argv):
     parser.add_argument('-model_path', type=str, help=f"Model path in COS", default='sklearn_model.pickle')
     parser.add_argument('-dependent_variables', type=str, help=f"Columns to pass to predict", default='*')
     parser.add_argument('-predicted_value', type=str, help=f"Name of the [redicted value column]", default='predicted')
-    utils.add_common_args(parser,argv)
+    script_utils.add_common_args(parser,argv)
     args = parser.parse_args(argv[1:])
 
     # logging.basicConfig(level=args.loglevel)
     from iotfunctions.enginelog import EngineLogging
     EngineLogging.configure_console_logging(args.loglevel)
 
-    db,db_schema=utils.setup_iotfunc(args.creds_file,args.echo_sql)
+    db,db_schema=script_utils.setup_iotfunc(args.creds_file,args.echo_sql)
     # pprint.pprint(db.credentials)
 
     import phg_iotfuncs.func_sklearn
@@ -49,7 +49,7 @@ def main(argv):
         test(db,db_schema,phg_iotfuncs.func_sklearn.PredictSKLearn,
                 args.model_path, args.dependent_variables,args.predicted_value)
     elif args.operation=='register':
-        utils.registerFunction(db,db_schema,phg_iotfuncs.func_sklearn.PredictSKLearn)
+        script_utils.registerFunction(db,db_schema,phg_iotfuncs.func_sklearn.PredictSKLearn)
     elif args.operation=='store':
         print(f"Storing model from {args.model_file} into COS at {args.model_path}")
         with io.open(args.model_file,'rb') as F:
@@ -70,7 +70,7 @@ def main(argv):
     elif args.operation=='testext':
         testExt(db,db_schema,phg_iotfuncs.func_sklearn.ExtendEntityPreload)
     elif args.operation=='regext':
-        utils.registerFunction(db,db_schema,phg_iotfuncs.func_sklearn.ExtendEntityPreload)
+        script_utils.registerFunction(db,db_schema,phg_iotfuncs.func_sklearn.ExtendEntityPreload)
     elif args.operation=='unregext':
         rc=db.unregister_functions(['ExtendEntityPreload'])
         print(f"unregistering function rc={rc}")
