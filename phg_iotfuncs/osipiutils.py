@@ -74,3 +74,24 @@ def getOSIPiPoints(piHost, piPort, piUser, piPass, pointsNameFilter,pointFields,
             pointValues[point['Name']]=[{f:v[f] for f in valueFields} for v in r_ptvals['Items']]
             logger.debug(f"{TAB.join([point[f] for f in pointFields])}\t[#{len(r_ptvals['Items'])}]\t= {TAB.join(str(r_ptvals['Items'][-1][f]) for f in valueFields)}")
         return pointValues
+
+def mapValues(ptVals,deviceAttr,point_attr_map):
+    """
+    Map the values to a flattened version, indexed by timestamp
+    """
+    mapped={}
+
+    for ptKey,ptVal in ptVals.items():
+        if not ptKey in point_attr_map:
+            logger.warning(f"Point key {ptKey} not found in map")
+        else:
+            attr_name=point_attr_map[ptKey]
+            deviceId=attr_name[0]
+            attr_name=attr_name[1]
+            for row in ptVal:
+                ts=row['Timestamp']
+                if (ts,deviceId) not in mapped:
+                    mapped[(ts,deviceId)]={'Timestamp':ts, deviceAttr:deviceId}
+                mapped[(ts,deviceId)][attr_name]=row['Value']
+
+    return mapped
