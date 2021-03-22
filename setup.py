@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # *****************************************************************************
-# © Copyright IBM Corp. 2021.  All Rights Reserved.
+# Â© Copyright IBM Corp. 2021.  All Rights Reserved.
 #
 # This program and the accompanying materials
 # are made available under the terms of the Apache V2.0
