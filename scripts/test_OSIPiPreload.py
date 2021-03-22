@@ -11,13 +11,18 @@
 #
 # Written by Philippe Gregoire, IBM France, Hybrid CLoud Build Team Europe 
 # *****************************************************************************
-import sys
+import os,sys
 
 import logging,pprint
 from iotfunctions.enginelog import EngineLogging
 logger = logging.getLogger(__name__)
 
 import script_utils
+
+def addOSIPiArgs(refPath,credsFile,parser):
+    creds_pi=script_utils.load_creds_file(refPath,credsFile)
+    for arg in ['pihost','piport','piuser','pipass']:
+        parser.add_argument('-'+arg,required=False,default=creds_pi[arg] if arg in creds_pi else None)
 
 def main(argv):
     '''
@@ -27,15 +32,23 @@ def main(argv):
     Supply credentials by pasting them from the usage section into the UI.
     Place your credentials in a separate file that you don't check into the repo.
     '''
+    # Get the IoTFunctions lib path
+    import os, sys, argparse
+    sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__),'..')))
 
-    import argparse
-    parser = argparse.ArgumentParser(description=f"Tester for OSIPIPreload iotfunction")
-    parser.add_argument('operation', type=str, help=f"Operation", choices=['test','register','constant','k'], default='test')
-    parser.add_argument('-date', dest='date_field', type=str, help=f"Field containing the event date/tiestamp", default='date')
-    parser.add_argument('-device_id', type=str, help=f"Device ID to filter on")
-    parser.add_argument('-req', dest='required_fields', type=str, help=f"Fields that are required to retain the record", nargs='*')
+    from phg_iotfuncs.func_osipi import PhGOSIPIPreload as TargetFunc
+    from phg_iotfuncs.func_osipi import POINT_PREFIX, POINT_ATTR_MAP
+
+    print(f"Using {TargetFunc.__name__}")
+    parser = argparse.ArgumentParser(description=f"Tester for {TargetFunc.__name__} iotfunction")
+    addOSIPiArgs(argv[0],'credentials_osipi',parser)
+
+    parser.add_argument('operation', type=str, help=f"Operation", choices=['test','register','create','constant','k'], default='test')
+    parser.add_argument('-date_field', type=str, help=f"Field containing the event date/timestamp", required=False,default='Timestamp')
+    parser.add_argument('-name_filter', type=str, help=f"OSIPi Point name filter", required=False,default=f"{POINT_PREFIX}*")
     parser.add_argument('-const_name', type=str, help=f"Name of constant", default=None)
-    parser.add_argument('-const_value', type=int, help=f"Value for constant", default=None)
+    parser.add_argument('-const_value', type=str, help=f"Value for constant", default=None)
+    parser.add_argument('-entityName', type=str, help=f"Value for constant", default=f"test_entity_for_{TargetFunc.__name__}")
 
     script_utils.add_common_args(parser,argv)
     args = parser.parse_args(argv[1:])
@@ -46,18 +59,18 @@ def main(argv):
     db,db_schema=script_utils.setup_iotfunc(args.creds_file,args.echo_sql)
     # pprint.pprint(db.credentials)
     import os
-    sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__),'..')))
-    
-    from phg_iotfuncs.func_osipi import PhGOSIPIPreload as TargetFunc
+
     if args.operation=='test':
-        access_key=amqp_receiver.adjustArgs(args)
-        required_fields='' if args.required_fields is None else ','.join(args.required_fields)
         test(db,db_schema,TargetFunc,
-                args.iot_hub_name, args.policy_name,
-                args.consumer_group,args.partition_id,access_key,
-                args.device_id,args.date_field,required_fields)
+                args.pihost, args.piport,
+                args.piuser,args.pipass,
+                args.name_filter,args.date_field)
     elif args.operation=='register':
         script_utils.registerFunction(db,db_schema,TargetFunc)
+    elif args.operation=='create':
+        attributes=list(dict.fromkeys(v[1] for v in POINT_ATTR_MAP.values()))
+        print(f"Creating entity {args.entityName} with attributes {attributes}")
+        script_utils.createEntity(db,db_schema,args.entityName,attributes)
     elif args.operation=='constant':
         from phg_iotfuncs import iotf_utils
         pprint.pprint(iotf_utils.getConstant(db, constant_name=None))
@@ -96,7 +109,9 @@ def main(argv):
                           raise_error=True)
         pprint(rc)
 
-def test(db,db_schema,iot_func,iot_hub_name, policy_name, consumer_group, partition_id, access_key, device_id, date_field, required_fields):
+def test(db,db_schema,iot_func,osipi_host, osipi_port,
+            osipi_user, osipi_pass, 
+            name_filter, date_field):
     ''' Test the PhGOSIPIPreload function
 
     Import and instantiate the functions to be tested
@@ -114,10 +129,10 @@ def test(db,db_schema,iot_func,iot_hub_name, policy_name, consumer_group, partit
     '''
     ####################################################################################
     try:
-        logger.info(f"Creating {iot_func} for {iot_hub_name}, {policy_name}, {consumer_group}, {partition_id}, {access_key}, {device_id},{date_field},{required_fields}")
-        fn = iot_func(iot_hub_name, policy_name, consumer_group, partition_id, access_key,
-                      device_id,date_field,required_fields,
-                      amqp_preload_ok='amqp_preload_ok')
+        logger.info(f"Creating {iot_func} for {osipi_host}:{osipi_port}")
+        fn = iot_func(osipi_host, osipi_port, osipi_user, osipi_pass, 
+                    name_filter, date_field,
+                    osipi_preload_ok='osipi_preload_ok')
         logger.info(f"Executing test for {iot_func}")
         fn.execute_local_test(db=db,db_schema=db_schema,to_csv=False)
     except AttributeError as attrErr:
