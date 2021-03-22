@@ -139,7 +139,7 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
         self.date_field=date_field.strip()
         # Make a set out of the required fields plus date
         # self.required_fields={r.strip() for r in required_fields.split(',')} | {self.date_field}
-        self.lastseq_constant=f"osipi_lastseq_{nameFilter.lower()}"
+        self.lastseq_constant=f"osipi_lastseq_{name_filter.lower()}"
 
         self.osipi_preload_ok=osipi_preload_ok
 
