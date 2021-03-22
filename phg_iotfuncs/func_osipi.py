@@ -187,39 +187,15 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
         # Get data from IoT Event Hub
         from phg_iotfuncs import osipiutils
 
-        msgs=osipiutils.getOSIPiPoints(self.osipi_host,self.osipi_port,self.osipi_user,self.osipi_pass,self.name_filter,POINTS_FIELDS,VALUE_FIELDS)
+        ptVals=osipiutils.getOSIPiPoints(self.osipi_host,self.osipi_port,self.osipi_user,self.osipi_pass,self.name_filter,POINTS_FIELDS,VALUE_FIELDS)
 
         # If no records, return immediately
-        if len(msgs)==0:
+        if len(ptVals)==0:
             logger.warning(f"No messages returned from OSIPi")
             return False
-        logger.info(f"Retrieved messages for {len(msgs)} attributes")
+        logger.info(f"Retrieved messages for {len(ptVals)} attributes")
 
-        # Map values to a flattened version indexed by timestamp
-        mapped=osipiutils.mapValues(msgs,DEVICE_ATTR,POINT_ATTR_MAP)
-
-        # We get the messages in an array of dicts, convert to dataframe
-        df=pd.DataFrame.from_records([v for v in mapped.values()])
-        logger.info(f"df initial columns={[c for c in df.columns]}")
-
-        # Find the date column. We know at this stage that the records we keep have a date_field
-        df[self.date_field]=pd.to_datetime(df[self.date_field],errors='coerce')
-
-        # Adjust columns, add index columns deviceid, rcv_timestamp_utc
-        id_index_col=DEVICE_ATTR
-        ts_index_col='rcv_timestamp_utc'    # Column which holds the timestamp part of the index
-        logger.info(f"entity_type._timestamp={entity_type._timestamp}")
-        logger.info(f"Using columns [{DEVICE_ATTR},{self.date_field}] as index [{id_index_col},{ts_index_col}]")
-        df.rename(columns={self.date_field:ts_index_col},inplace=True)
-        df.set_index([id_index_col,ts_index_col],drop=False,inplace=True)
-
-        # Give back the timestamp column its original name
-        df.rename(columns={ts_index_col:self.date_field},inplace=True)
-
-        # Adjust column names, set updated_utc to current ts
-        # df.rename(columns={'iothub-message-source':'eventtype'},inplace=True)
-        df['updated_utc']=dt.datetime.utcnow()
-
+        df=osipiutils.convertToEntity(ptVals,'Timestamp',DEVICE_ATTR,POINT_ATTR_MAP)
         # Store the highest sequence number
         max_sequence_number=df[self.date_field].max()
         logger.info(f"Highest seq number={max_sequence_number}")
