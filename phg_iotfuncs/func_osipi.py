@@ -189,7 +189,7 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
 
         msgs=osipiutils.getOSIPiPoints(self.osipi_host,self.osipi_port,self.osipi_user,self.osipi_pass,self.name_filter,POINTS_FIELDS,VALUE_FIELDS)
 
-        # If no records, return imediatelly
+        # If no records, return immediately
         if len(msgs)==0:
             logger.warning(f"No messages returned from OSIPi")
             return False
@@ -199,7 +199,7 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
         mapped=osipiutils.mapValues(msgs,DEVICE_ATTR,POINT_ATTR_MAP)
 
         # We get the messages in an array of dicts, convert to dataframe
-        df=pd.DataFrame.from_records([v for v in msgs.values()])
+        df=pd.DataFrame.from_records([v for v in mapped.values()])
         logger.info(f"df initial columns={[c for c in df.columns]}")
 
         # Find the date column. We know at this stage that the records we keep have a date_field
