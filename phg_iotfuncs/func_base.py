@@ -78,20 +78,23 @@ class PhGCommonPreload(BasePreload):
         iotf_utils.putConstant(db,self.lastseq_constant,int(sequence_number))
         logger.info(f"Updated constant {self.lastseq_constant} to value {sequence_number}")
 
+    def renameToDBColumns(df,entity_meta_dict):
+        """ Rename to database Column's names
+        """
+        # Get the table column names from metadata
+        columnMap={d['name']:d['columnName'] for d in entity_meta_dict['dataItems'] if d['type']=='METRIC'}
+        logger.info(f"Column map {pprint.pformat(columnMap)}")
+        df.rename(columns=columnMap,inplace=True)
+
     def storePreload(self,db,table,entity_type,entity_meta_dict,df):
         """
         Store the Preload data, to be used by preload override
         """
         import datetime as dt
 
-        # Get the table column names from metadata
-        columnMap={d['name']:d['columnName'] for d in entity_meta_dict['dataItems'] if d['type']=='METRIC'}
-        logger.info(f"Column map {pprint.pformat(columnMap)}")
-        df.rename(columns=columnMap,inplace=True)
-
+        logger.info(f"Incoming df columns={df.columns}")
         required_cols = db.get_column_names(table=table, schema=entity_type._db_schema)
         logger.info(f"Required db columns={required_cols}")
-        logger.info(f"Incoming df columns={df.columns}")
         # keepColumns=['_timestamp']+[v for v in columnMap.values()]+['updated_utc']
         # drop all columns not in the target
         df.drop(columns=[c for c in df.columns if c not in required_cols],inplace=True)
@@ -103,7 +106,7 @@ class PhGCommonPreload(BasePreload):
         # df.rename(columns={m['name']: m['columnName'] for m in entityMetaDict['dataItemDto']},inplace=True)
         missing_cols = list(set(required_cols) - set(df.columns))
         if len(missing_cols) > 0:
-            entity_type.trace_append(created_by=self, msg='AMQP data was missing columns. Adding values.',
+            entity_type.trace_append(created_by=self, msg='OSIPI data was missing columns. Adding values.',
                                      log_method=logger.debug, **{'missing_cols': missing_cols})
             logger.info(f"JSON data was missing {len(missing_cols)} columns. Adding values for {missing_cols}")
             for m in missing_cols:
