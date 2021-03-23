@@ -68,7 +68,7 @@ def main(argv):
     elif args.operation=='register':
         script_utils.registerFunction(db,db_schema,TargetFunc)
     elif args.operation=='create':
-        attributes=list(dict.fromkeys(v[1] for v in POINT_ATTR_MAP.values()))
+        attributes=list(dict.fromkeys([v[1] for v in POINT_ATTR_MAP.values()]))
         print(f"Creating entity {args.entityName} with attributes {attributes}")
         script_utils.createEntity(db,db_schema,args.entityName,attributes)
     elif args.operation=='constant':

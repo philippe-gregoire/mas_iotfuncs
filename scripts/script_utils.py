@@ -19,6 +19,8 @@ import sys,os, json
 import logging
 logger = logging.getLogger(__name__)
 
+import sqlalchemy
+
 # Built-In Functions
 # from iotfunctions import bif
 
@@ -38,25 +40,24 @@ def add_common_args(parser,argv):
     if not os.path.exists(defCredsFile):
         print(f"WARNING: default credentials file {defCredsFile} does not exist, copy and edit credentials_as.json")
 
-def entity_main(argv,def_entity_name,def_ts_column,tags):
+def entity_main(argv,def_entity_name,def_ts_column,columns,column_type=sqlalchemy.Float()):
     ''' Entity creator main method '''
     import argparse
 
-    parser = argparse.ArgumentParser(description=f"Entity Creator with float columns {tags}")
+    parser = argparse.ArgumentParser(description=f"Entity Creator with {column_type} columns {columns}")
     parser.add_argument('-entity_name', type=str,  help=f"Name of the Entity, default to '{def_entity_name}'", default=def_entity_name)
     parser.add_argument('-ts_column', type=str,  help=f"timestamp column name, default to '{def_ts_column}'", default=def_ts_column)
     add_common_args(parser,argv)
     args = parser.parse_args(argv[1:])
     logging.basicConfig(level=args.loglevel)
 
-    print(f"Creating Entity {args.entity_name} for tags {tags}")
+    print(f"Creating Entity {args.entity_name} for tags {columns}")
 
     db,db_schema=setup_iotfunc(args.creds_file,args.echo_sql)
 
-    import sqlalchemy
-    columns=[sqlalchemy.Column(args.ts_column,sqlalchemy.DateTime())]+[sqlalchemy.Column(t,sqlalchemy.Float()) for t in tags]
+    columns=[sqlalchemy.Column(args.ts_column,sqlalchemy.DateTime())]+[sqlalchemy.Column(c,column_type) for c in columns]
 
-    createEntity(db,db_schema,args.entity_name,columns)
+    createEntity(db,db_schema,args.entity_name,columns,column_type)
 
 def load_creds_file(refPath,prefix):
     creds_file=default_creds_file(refPath,prefix)
@@ -122,13 +123,17 @@ def inferTypesFromCSV(csv_file):
         logger.info(f"All columns have been mapped from {csv_file}: {csv_columns}")
     return csv_columns
 
-def createEntity(db,db_schema,entity_name,columns):
+def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float()):
     '''
     Create an Entity by name and columns
+    columns is expected to be an array of sqlalchemy.Column objects. if they are strings, they will be converted to Columns
     '''
     logger.info(f"Creating Entity {entity_name} for {len(columns)} columns")
 
     import iotfunctions.metadata
+
+    # Align Columns which are not sqlalchemy yet
+    columns=[c if isinstance(c,sqlalchemy.Column) else sqlalchemy.Column(str(c).replace(' ','_').replace('.','_'),columnType) for c in columns]
 
     '''
     To do anything with IoT Platform Analytics, you will need one or more entity type.
