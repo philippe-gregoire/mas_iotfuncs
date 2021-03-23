@@ -46,6 +46,7 @@ def main(argv):
     
     df=osipiutils.convertToEntity(ptVals,'Timestamp',DEVICE_ATTR,POINT_ATTR_MAP)
     print(df.head())
+    df.to_csv("TESTOSIPI.csv")
 
 
 if __name__=='__main__':

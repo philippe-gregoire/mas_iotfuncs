@@ -38,8 +38,8 @@ POINT_PREFIX='Modbus1.1.Holding16.'
 
 POINT_ATTR_MAP={
     # X Axis Sensor 1 
-    f'{POINT_PREFIX}0':('X1','globalV'),
-    f'{POINT_PREFIX}2':('X1','globalG'),
+    f'{POINT_PREFIX}0':('X1','globalv'),
+    f'{POINT_PREFIX}2':('X1','globalg'),
     f'{POINT_PREFIX}4':('X1','fftv1'),
     f'{POINT_PREFIX}6':('X1','fftg1'),
     f'{POINT_PREFIX}8':('X1','fftv2'),
@@ -62,8 +62,8 @@ POINT_ATTR_MAP={
     f'{POINT_PREFIX}42':('X1','fftg5_7'),
     f'{POINT_PREFIX}44':('X1','temp'),
     # Y Axis Sensor 1(
-    f'{POINT_PREFIX}46':('Y1','globalV'),
-    f'{POINT_PREFIX}48':('Y1','globalG'),
+    f'{POINT_PREFIX}46':('Y1','globalv'),
+    f'{POINT_PREFIX}48':('Y1','globalg'),
     f'{POINT_PREFIX}50':('Y1','fftv1'),
     f'{POINT_PREFIX}52':('Y1','fftg1'),
     f'{POINT_PREFIX}54':('Y1','fftv2'),
@@ -86,8 +86,8 @@ POINT_ATTR_MAP={
     f'{POINT_PREFIX}88':('Y1','fftg5_7'),
     f'{POINT_PREFIX}90':('Y1','temp'),
     # X Axis sensor 2)
-    f'{POINT_PREFIX}92':('X2','globalV'),
-    f'{POINT_PREFIX}94':('X2','globalG'),
+    f'{POINT_PREFIX}92':('X2','globalv'),
+    f'{POINT_PREFIX}94':('X2','globalg'),
     f'{POINT_PREFIX}96':('X2','fftv1'),
     f'{POINT_PREFIX}98':('X2','fftg1'),
     f'{POINT_PREFIX}100':('X2','fftv2'),
@@ -109,7 +109,7 @@ POINT_ATTR_MAP={
     f'{POINT_PREFIX}132':('X2','fftv5_7'),
     f'{POINT_PREFIX}134':('X2','fftg5_7'),
     f'{POINT_PREFIX}136':('X2','temp'),
-    f'{POINT_PREFIX}138':(None,'rpm')
+    f'{POINT_PREFIX}138':('Motor','rpm')
 }
 
 DEVICE_ATTR='deviceid'
@@ -117,7 +117,8 @@ DEVICE_ATTR='deviceid'
 # List the fields we want to retrieve for Points
 POINTS_FIELDS=['Name'] # other fields are empty
 # List the values attributes we want to retrieve
-VALUE_FIELDS=['Value','Timestamp']
+DATE_FIELD='Timestamp'
+VALUE_FIELDS=['Value',DATE_FIELD]
 
 class PhGOSIPIPreload(func_base.PhGCommonPreload):
     """
@@ -195,7 +196,7 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
             return False
         logger.info(f"Retrieved messages for {len(ptVals)} attributes")
 
-        df=osipiutils.convertToEntity(ptVals,'Timestamp',DEVICE_ATTR,POINT_ATTR_MAP)
+        df=osipiutils.convertToEntity(ptVals,DATE_FIELD,DEVICE_ATTR,POINT_ATTR_MAP)
         # Store the highest sequence number
         max_sequence_number=df[self.date_field].max()
         logger.info(f"Highest seq number={max_sequence_number}")
