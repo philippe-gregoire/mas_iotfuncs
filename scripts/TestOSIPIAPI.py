@@ -29,7 +29,7 @@ def main(argv):
 
     sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__),'..')))
     from phg_iotfuncs import osipiutils
-    from phg_iotfuncs.func_osipi import POINT_PREFIX, POINT_ATTR_MAP,POINTS_FIELDS,VALUE_FIELDS,DEVICE_ATTR
+    from phg_iotfuncs.func_osipi import POINT_PREFIX, POINT_ATTR_MAP,DATE_FIELD,POINTS_FIELDS,VALUE_FIELDS,DEVICE_ATTR
 
     import argparse
     from pprint import pprint
@@ -44,8 +44,11 @@ def main(argv):
 
     ptVals=osipiutils.getOSIPiPoints(args.pihost,args.piport,args.piuser,args.pipass,args.nameFilter,POINTS_FIELDS,VALUE_FIELDS)
     
-    df=osipiutils.convertToEntity(ptVals,'Timestamp',DEVICE_ATTR,POINT_ATTR_MAP)
+    df=osipiutils.convertToEntity(ptVals,DATE_FIELD,DEVICE_ATTR,POINT_ATTR_MAP)
     print(df.head())
+
+    max_timestamp=df[DATE_FIELD].max()
+    logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)} {max_timestamp.timestamp()} {int(max_timestamp.timestamp()/1000)}")
     df.to_csv("TESTOSIPI.csv")
 
 

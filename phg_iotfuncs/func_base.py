@@ -29,8 +29,10 @@ class PhGCommonPreload(BasePreload):
     Takes care of making available the various variables needed to implement 
     preload activities in the preload() method
     """
-    def __init__(self,preload_ok):
+    def __init__(self,preload_ok,lastseq_constant,lastseq_type=str):
         super().__init__(dummy_items=[], output_item=preload_ok)
+        self.lastseq_constant=lastseq_constant
+        self.lastseq_type=lastseq_type
 
     def execute(self, df, start_ts=None, end_ts=None, entities=None):
         ''' When extending this class, do not override execute(), but implement preload()
@@ -57,7 +59,7 @@ class PhGCommonPreload(BasePreload):
         logger.debug(pprint.pformat(entity_meta_dict))
 
         # get global constant (Current bug with entity-constant)
-        last_seq=iotf_utils.getConstant(entity_type.db,self.lastseq_constant,-1,auto_register=True,const_type=int)
+        last_seq=iotf_utils.getConstant(entity_type.db,self.lastseq_constant,-1,auto_register=True,const_type=self.lastseq_type)
 
         # This class is setup to write to the entity time series table
         table = entity_type.name
@@ -75,7 +77,7 @@ class PhGCommonPreload(BasePreload):
             Update the sequence number stored for the Entity
         """
         from phg_iotfuncs import iotf_utils
-        iotf_utils.putConstant(db,self.lastseq_constant,int(sequence_number))
+        iotf_utils.putConstant(db,self.lastseq_constant,sequence_number)
         logger.info(f"Updated constant {self.lastseq_constant} to value {sequence_number}")
 
     def renameToDBColumns(df,entity_meta_dict):

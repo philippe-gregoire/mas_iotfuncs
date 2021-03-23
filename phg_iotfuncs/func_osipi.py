@@ -127,11 +127,9 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
     """
 
     def __init__(self, osipi_host, osipi_port, osipi_user, osipi_pass, 
-                 name_filter,
-                 date_field,
-                #  required_fields,
+                 name_filter, date_field,
                  osipi_preload_ok):
-        super().__init__(osipi_preload_ok)
+        super().__init__(osipi_preload_ok,f"osipi_lastseq_{name_filter.lower()}",str)
 
         # create an instance variable with the same name as each arg
         self.osipi_host = osipi_host
@@ -142,7 +140,6 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
         self.date_field=date_field.strip()
         # Make a set out of the required fields plus date
         # self.required_fields={r.strip() for r in required_fields.split(',')} | {self.date_field}
-        self.lastseq_constant=f"osipi_lastseq_{name_filter.lower()}"
 
         self.osipi_preload_ok=osipi_preload_ok
 
@@ -198,12 +195,12 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
 
         df=osipiutils.convertToEntity(ptVals,DATE_FIELD,DEVICE_ATTR,POINT_ATTR_MAP)
         # Store the highest sequence number
-        max_sequence_number=df[self.date_field].max()
-        logger.info(f"Highest seq number={max_sequence_number}")
+        max_timestamp=df[self.date_field].max()
+        logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
 
         self.storePreload(db,table,entity_type,entity_meta_dict,df)
 
         # update sequence number, use global constant
-        self.updateLastSeq(db,max_sequence_number)
+        self.updateLastSeq(db,str(max_timestamp))
 
         return True
