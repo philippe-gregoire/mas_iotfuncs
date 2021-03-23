@@ -86,11 +86,12 @@ class PhGCommonPreload(BasePreload):
 
         # Get the table column names from metadata
         columnMap={d['name']:d['columnName'] for d in entity_meta_dict['dataItems'] if d['type']=='METRIC'}
-        logger.debug(f"Column map {pprint.pformat(columnMap)}")
+        logger.info(f"Column map {pprint.pformat(columnMap)}")
         df.rename(columns=columnMap,inplace=True)
 
         required_cols = db.get_column_names(table=table, schema=entity_type._db_schema)
-        logger.info(f"db columns={required_cols}")
+        logger.info(f"Required db columns={required_cols}")
+        logger.info(f"Incoming df columns={df.columns}")
         # keepColumns=['_timestamp']+[v for v in columnMap.values()]+['updated_utc']
         # drop all columns not in the target
         df.drop(columns=[c for c in df.columns if c not in required_cols],inplace=True)

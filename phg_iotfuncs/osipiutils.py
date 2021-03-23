@@ -78,6 +78,8 @@ def getOSIPiPoints(piHost, piPort, piUser, piPass, pointsNameFilter,pointFields,
 def mapValues(ptVals,deviceAttr,point_attr_map):
     """
     Map the values to a flattened version, indexed by timestamp
+
+    For each timestamp and deviceid, we get the corresponding attribute values
     """
     mapped={}
 
