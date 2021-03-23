@@ -18,18 +18,15 @@ import script_utils
 
 logger = logging.getLogger(__name__)
 
-def addOSIPiArgs(refPath,credsFile,parser):
-    creds_pi=script_utils.load_creds_file(refPath,credsFile)
-    for arg in ['pihost','piport','picert','piuser','pipass','nameFilter']:
-        parser.add_argument('-'+arg,required=False,default=creds_pi[arg] if arg in creds_pi else None)
-
 def main(argv):
     ''' Test the pi points get function '''
     import os
 
     sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__),'..')))
     from phg_iotfuncs import osipiutils
-    from phg_iotfuncs.func_osipi import POINT_PREFIX, POINT_ATTR_MAP,DATE_FIELD,POINTS_FIELDS,VALUE_FIELDS,DEVICE_ATTR
+    from phg_iotfuncs.func_osipi import POINT_ATTR_MAP,POINTS_TS_FIELD,POINTS_FIELDS,POINTS_ATTR_FIELDS,DEVICE_ATTR
+
+    from test_OSIPiPreload import addOSIPiArgs
 
     import argparse
     from pprint import pprint
@@ -42,12 +39,12 @@ def main(argv):
     addOSIPiArgs(argv[0],'credentials_osipi',parser)
     args=parser.parse_args(argv[1:])
 
-    ptVals=osipiutils.getOSIPiPoints(args.pihost,args.piport,args.piuser,args.pipass,args.nameFilter,POINTS_FIELDS,VALUE_FIELDS)
+    ptVals=osipiutils.getOSIPiPoints(args.pihost,args.piport,args.piuser,args.pipass,args.name_filter,POINTS_FIELDS,POINTS_ATTR_FIELDS)
     
-    df=osipiutils.convertToEntity(ptVals,DATE_FIELD,DEVICE_ATTR,POINT_ATTR_MAP)
+    df=osipiutils.convertToEntity(ptVals,POINTS_TS_FIELD,args.date_field,DEVICE_ATTR,POINT_ATTR_MAP)
     print(df.head())
 
-    max_timestamp=df[DATE_FIELD].max()
+    max_timestamp=df[args.date_field].max()
     logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)} {max_timestamp.timestamp()} {int(max_timestamp.timestamp()/1000)}")
     df.to_csv("TESTOSIPI.csv")
 

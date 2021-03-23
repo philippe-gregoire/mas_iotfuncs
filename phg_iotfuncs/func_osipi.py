@@ -116,9 +116,12 @@ DEVICE_ATTR='deviceid'
 
 # List the fields we want to retrieve for Points
 POINTS_FIELDS=['Name'] # other fields are empty
-# List the values attributes we want to retrieve
-DATE_FIELD='Timestamp'
-VALUE_FIELDS=['Value',DATE_FIELD]
+# TimeStamp field in the Points definition
+POINTS_TS_FIELD='Timestamp'
+# Value field in the Points definition
+POINTS_VAL_FIELD='Value'
+# List the Point attributes we want to retrieve
+POINTS_ATTR_FIELDS=[POINTS_VAL_FIELD,POINTS_TS_FIELD]
 
 class PhGOSIPIPreload(func_base.PhGCommonPreload):
     """
@@ -185,7 +188,7 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
         # Get data from IoT Event Hub
         from phg_iotfuncs import osipiutils
 
-        ptVals=osipiutils.getOSIPiPoints(self.osipi_host,self.osipi_port,self.osipi_user,self.osipi_pass,self.name_filter,POINTS_FIELDS,VALUE_FIELDS)
+        ptVals=osipiutils.getOSIPiPoints(self.osipi_host,self.osipi_port,self.osipi_user,self.osipi_pass,self.name_filter,POINTS_FIELDS,POINTS_ATTR_FIELDS)
 
         # If no records, return immediately
         if len(ptVals)==0:
@@ -193,7 +196,7 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
             return False
         logger.info(f"Retrieved messages for {len(ptVals)} attributes")
 
-        df=osipiutils.convertToEntity(ptVals,DATE_FIELD,DEVICE_ATTR,POINT_ATTR_MAP)
+        df=osipiutils.convertToEntity(ptVals,POINTS_TS_FIELD,self.date_field,DEVICE_ATTR,POINT_ATTR_MAP)
         # Store the highest sequence number
         max_timestamp=df[self.date_field].max()
         logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")

@@ -98,7 +98,7 @@ def mapValues(ptVals,deviceAttr,point_attr_map):
 
     return mapped
 
-def convertToEntity(ptVals,date_field,deviceAttr,point_attr_map):
+def convertToEntity(ptVals,point_ts_field,entity_date_field,deviceAttr,point_attr_map):
     """
         Convert the raw data to an Entity DataFrame
     """
@@ -113,17 +113,17 @@ def convertToEntity(ptVals,date_field,deviceAttr,point_attr_map):
     logger.info(f"df initial columns={[c for c in df.columns]}")
 
     # Find the date column. We know at this stage that the records we keep have a date_field
-    df[date_field]=pd.to_datetime(df[date_field],errors='coerce')
+    df[point_ts_field]=pd.to_datetime(df[point_ts_field],errors='coerce')
 
     # Adjust columns, add index columns deviceid, rcv_timestamp_utc
     id_index_col=deviceAttr
     ts_index_col='rcv_timestamp_utc'    # Column which holds the timestamp part of the index
-    logger.info(f"Using columns [{deviceAttr},{date_field}] as index [{id_index_col},{ts_index_col}]")
-    df.rename(columns={date_field:ts_index_col},inplace=True)
+    logger.info(f"Using columns [{deviceAttr},{point_ts_field}] as index [{id_index_col},{ts_index_col}]")
+    df.rename(columns={point_ts_field:ts_index_col},inplace=True)
     df.set_index([id_index_col,ts_index_col],drop=False,inplace=True)
 
-    # Give back the timestamp column its original name
-    df.rename(columns={ts_index_col:date_field},inplace=True)
+    # Set the Date/Timestamp column to the Entity's timestamp column name
+    df.rename(columns={ts_index_col:entity_date_field},inplace=True)
 
     # Adjust column names, set updated_utc to current ts
     # df.rename(columns={'iothub-message-source':'eventtype'},inplace=True)
