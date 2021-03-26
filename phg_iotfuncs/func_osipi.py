@@ -124,7 +124,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
                  database_path, element_name,
                  date_field,
                  osipi_elements_preload_ok):
-        super().__init__(osipi_elements_preload_ok,f"osipi_lastseq_{name_filter.lower()}",str)
+        super().__init__(osipi_elements_preload_ok,f"osipi_lastseq_{element_name.lower()}",str)
 
         import argparse
 
