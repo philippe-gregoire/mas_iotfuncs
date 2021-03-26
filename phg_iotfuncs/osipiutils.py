@@ -82,56 +82,6 @@ def getOSIPiPoints(piSrvParams, pointsNameFilter,valueFields):
             logger.debug(f"{point['Name']}\t[#{len(r_ptvals['Items'])}]\t= {TAB.join(str(r_ptvals['Items'][-1][f]) for f in valueFields)}")
         return pointValues
 
-def getOSIPiElements(piSrvParams, elementsPath,elementName,pointFields,valueFields):
-    ''' Get Element values from OSIPi API server
-        Navigation path from API Root:
-        - Asset server (https://192.168.63.39/PIWebAPI/assetservers)
-        - Items[0]['Links']['Databases']
-        -> Items[]['Name']=="IBM_FabLab", Items[]["Path"]: "\\\\OSISOFT-SERVER\\IBM_FabLab"
-        -> Items[x]['Links']['Elements'] (GetElements API, Name=Motor, search Hierarchy)
-            -> Links['RecordedData']
-
-        So, from the assetservers, we find the Database with given path, then find parent 
-        Element with given name, then drill-down through its Elements
-        below this will be the motor parts (Entities) from which we get 'RecordedData'
-    ''' 
-    # Navigate to API assetservers root
-    r_assets=getFromPi(piSrvParams,pipath='assetservers')
-    if logger.isEnabledFor(logging.DEBUG): pprint(r_assets)
-
-    # Navigate to DataServers
-    r_databases=getFromPi(piSrvParams,r_assets['Items'][0]['Links']['Databases'])
-    if logger.isEnabledFor(logging.DEBUG): pprint(r_databases)
-
-    # Check Path
-    elements=None
-    for database in r_databases['Items']:
-        logger.info(f"path={database['Path']}")
-        if elementsPath.startswith(database['Path']):
-            # This is the DB for our element
-            elements=database['Links']['Elements']
-            break
-    # From the elements we want to get the one with the specified name
-
-    #https://192.168.63.39/PIWebAPI/assetdatabases/F1RD2KDQ9HBz10qzW0LwqqvzwAjFsdqRaNDkK5AODV5OilTwT1NJU09GVC1TRVJWRVJcSUJNX0ZBQkxBQg/elements?searchFullHierarchy=true&nameFilter=Motor&selectedFields=Items.Links.Elements
-    if not elements:
-        return None
-
-    # Get the named Element, parent of sensors
-    r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Links.Elements&nameFilter={elementName}")
-    # We get the parent element, now list the sensors within
-    r_elements=getFromPi(piSrvParams,f"{r_elements['Items'][0]['Links']['Elements']}?selectedFields=Items.Name;Items.Links.RecordedData")
-    if logger.isEnabledFor(logging.DEBUG): pprint(r_elements)
-    sensorValues={}
-    for sensor in r_elements['Items']:
-        sensorValues[sensor['Name']]={}
-        r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?selectedFields=Items.Name;{selectedFields(valueFields,'Items.Items')}")
-        if logger.isEnabledFor(logging.DEBUG): pprint(r_data)
-        for d in r_data['Items']:
-            sensorValues[sensor['Name']][d['Name']]=[{f:v[f] for f in valueFields} for v in d['Items'] ]
-
-    return sensorValues
-
 def mapPointValues(ptVals,deviceAttr,point_attr_map):
     """
     Map the values from Points to device attributes, indexed by timestamp
@@ -157,23 +107,69 @@ def mapPointValues(ptVals,deviceAttr,point_attr_map):
 
     return flattened
 
-def flattenElementValues(elemVals,deviceAttr):
-    """
-    Map the values to a flattened version, indexed by timestamp
+def getParentElements(piSrvParams,databasePath,elementName):
+    ''' Get Element values from OSIPi API server
+        Navigation path from API Root:
+        - Asset server (https://192.168.63.39/PIWebAPI/assetservers)
+        - Items[0]['Links']['Databases']
+        -> Items[]['Name']=="IBM_FabLab", Items[]["Path"]: "\\\\OSISOFT-SERVER\\IBM_FabLab"
+        -> Items[x]['Links']['Elements'] (GetElements API, Name=Motor, search Hierarchy)
+            -> Links['RecordedData']
 
-    For each timestamp and deviceid, we get the corresponding attribute values
-    """
-    flattened={}
+        So, from the assetservers, we find the Database with given path, then find parent 
+        Element with given name, then drill-down through its Elements
+        below this will be the motor parts (Entities) from which we get 'RecordedData'
+    ''' 
+    # Navigate to API assetservers root
+    r_assets=getFromPi(piSrvParams,pipath='assetservers')
+    if logger.isEnabledFor(logging.DEBUG): pprint(r_assets)
 
-    # We receive ia dictionary keyed by deviceId, value being a dictionary keyed by attribute name containing ts,value 
-    for deviceId,deviceData in elemVals.items():
-        for attr_name,tsVal in deviceData.items():
-            ts=tsVal['Timestamp']
-            if (ts,deviceId) not in flattened:
-                flattened[(ts,deviceId)]={'Timestamp':ts, deviceAttr:deviceId}
-            flattened[(ts,deviceId)][attr_name]=tsVal['Value']
+    # Navigate to DataServers
+    r_databases=getFromPi(piSrvParams,r_assets['Items'][0]['Links']['Databases'])
+    if logger.isEnabledFor(logging.DEBUG): pprint(r_databases)
 
-    return flattened
+    # Check Path
+    elements=None
+    for database in r_databases['Items']:
+        logger.info(f"path={database['Path']}")
+        if databasePath.startswith(database['Path']):
+            # This is the DB for our element
+            elements=database['Links']['Elements']
+            break
+    # From the elements we want to get the one with the specified name
+
+    #https://192.168.63.39/PIWebAPI/assetdatabases/F1RD2KDQ9HBz10qzW0LwqqvzwAjFsdqRaNDkK5AODV5OilTwT1NJU09GVC1TRVJWRVJcSUJNX0ZBQkxBQg/elements?searchFullHierarchy=true&nameFilter=Motor&selectedFields=Items.Links.Elements
+    if not elements:
+        return None
+
+    # Get the named Element, parent of sensors
+    r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Links.Elements&nameFilter={elementName}")
+
+    # We get the parent element, now list the sensors within
+    r_elements=getFromPi(piSrvParams,f"{r_elements['Items'][0]['Links']['Elements']}?selectedFields=Items.Name;Items.Links.RecordedData")
+    if logger.isEnabledFor(logging.DEBUG): pprint(r_elements)
+
+    return r_elements
+
+def getOSIPiElements(piSrvParams, databasePath,elementName,valueFields,deviceAttr):
+    r_elements=getParentElements(piSrvParams, databasePath,elementName)
+
+    # We want to generate a dict indexed by (ts,deviceId)
+    sensorValues={}
+    for sensor in r_elements['Items']:
+        deviceId=sensor['Name']
+        sensorValues[sensor['Name']]={}
+        r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?selectedFields=Items.Name;{selectedFields(valueFields,'Items.Items')}")
+        if logger.isEnabledFor(logging.DEBUG): pprint(r_data)
+        for d in r_data['Items']:
+            attr_name=d['Name']
+            for item in d['Items']:
+                ts=item[ATTR_FIELD_TS]
+                if (ts,deviceId) not in sensorValues:
+                    sensorValues[(ts,deviceId)]={ATTR_FIELD_TS:ts, deviceAttr:deviceId}
+                sensorValues[(ts,deviceId)][attr_name]=item[ATTR_FIELD_VAL]
+
+    return sensorValues
 
 def convertToEntities(flattened,entity_date_field,deviceAttr):
     """

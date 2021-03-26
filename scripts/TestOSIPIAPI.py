@@ -39,17 +39,14 @@ def testPointsAPI(args):
 
 def testElementsAPI(args):
     ''' Test the pi Elements get function '''
-    from phg_iotfuncs import osipiutils
-    from phg_iotfuncs.func_osipi import POINT_ATTR_MAP,ATTR_FIELD_TS,ATTR_FIELDS,DEVICE_ATTR
+    from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
+    from phg_iotfuncs.func_osipi import DEVICE_ATTR
 
      # Fetch the Elements from OSIPi Server.
-    elemVals=osipiutils.getOSIPiElements(args,args.databasePath,args.elementName,ATTR_FIELDS)
-
-    # Map values to a flattened version indexed by timestamp
-    flattened=osipiutils.flattenElementValues(elemVals,DEVICE_ATTR)
+    elemVals=getOSIPiElements(args,args.databasePath,args.elementName,ATTR_FIELDS,DEVICE_ATTR)
 
     # Get into DataFrame table form indexed by timestamp 
-    df=osipiutils.convertToEntity(flattened,ATTR_FIELD_TS,args.date_field,DEVICE_ATTR,POINT_ATTR_MAP)
+    df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
     print(df.head())
 
     max_timestamp=df[args.date_field].max()
