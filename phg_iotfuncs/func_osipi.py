@@ -203,7 +203,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
 
         # Map column names for special characters
-        df.rename({c:c.replace(' ','_').replace('.','_') for c in df.columns)
+        df.rename({c:c.replace(' ','_').replace('.','_') for c in df.columns})
 
         self.storePreload(db,table,entity_type,entity_meta_dict,df)
 
