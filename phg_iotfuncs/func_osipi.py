@@ -114,7 +114,7 @@ POINT_ATTR_MAP={
 
 DEVICE_ATTR='deviceid'
 
-class PhGOSIPIPreload(func_base.PhGCommonPreload):
+class PhGOSIPIPointsPreload(func_base.PhGCommonPreload):
     """
     OSIPIPreload
     Do an OSI Pi Server read as a preload activity. Load results into the Entity Type time series table.
