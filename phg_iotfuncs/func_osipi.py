@@ -124,7 +124,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
                  database_path, element_name,
                  date_field,
                  osipi_elements_preload_ok):
-        super().__init__(osipi_preload_ok,f"osipi_lastseq_{name_filter.lower()}",str)
+        super().__init__(osipi_elements_preload_ok,f"osipi_lastseq_{name_filter.lower()}",str)
 
         import argparse
 
@@ -201,6 +201,9 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         # Store the highest sequence number
         max_timestamp=df[self.date_field].max()
         logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
+
+        # Map column names for special characters
+        df.rename({c:c.replace(' ','_').replace('.','_') for c in df.columns)
 
         self.storePreload(db,table,entity_type,entity_meta_dict,df)
 
