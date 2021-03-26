@@ -40,15 +40,16 @@ def main(argv):
     import os, sys, argparse
     sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__),'..')))
 
-    print(f"Using {TargetFunc.__name__}")
-    parser = argparse.ArgumentParser(description=f"Tester for {TargetFunc.__name__} iotfunction")
+    parser = argparse.ArgumentParser(description=f"Tester for OSIPI iotfunctions")
     addOSIPiArgs(argv[0],'credentials_osipi',parser)
 
     parser.add_argument('operation', type=str, help=f"Operation", choices=['test','register','create','constant','k','osipi'], default='test')
     parser.add_argument('ositype', type=str, help=f"Type of OSI API", choices=['Points','Elements'])
     parser.add_argument('-const_name', type=str, help=f"Name of constant", default=None)
     parser.add_argument('-const_value', type=str, help=f"Value for constant", default=None)
-    parser.add_argument('-entityName', type=str, help=f"Value for constant", default=f"test_entity_for_{TargetFunc.__name__}")
+    parser.add_argument('-entityNamePrefix', type=str, help=f"Value for constant", default=f"test_entity_for_")
+    parser.add_argument('-database_path', type=str, help=f"Value for constant", default=None)
+    parser.add_argument('-element_name', type=str, help=f"Value for constant", default=None)
 
     script_utils.add_common_args(parser,argv)
     args = parser.parse_args(argv[1:])
@@ -72,10 +73,11 @@ def main(argv):
         elif args.operation=='create':
             from phg_iotfuncs.func_osipi import POINT_ATTR_MAP
             attributes=list(dict.fromkeys([v[1] for v in POINT_ATTR_MAP.values()]))
-            print(f"Creating entity {args.entityName} with attributes {attributes}")
-            script_utils.createEntity(db,db_schema,args.entityName,attributes)
+            entityName=args.entityNamePrefix+TargetFunc.__name__
+            print(f"Creating entity {entityName} with attributes {attributes}")
+            script_utils.createEntity(db,db_schema,entityName,attributes)
     elif args.ositype=='Elements':
-        from phg_iotfuncs.func_osipi import PhGOSIPIElementsPreload as TargetFunc
+        from phg_iotfuncs.func_osipi import PhGOSIElemsPreload as TargetFunc
         if args.operation=='test':
             test(db,db_schema,TargetFunc,
                     args.pihost, args.piport,
@@ -85,9 +87,19 @@ def main(argv):
         elif args.operation=='register':
             script_utils.registerFunction(db,db_schema,TargetFunc)
         elif args.operation=='create':
-            attributes=list(dict.fromkeys([v[1] for v in POINT_ATTR_MAP.values()]))
-            print(f"Creating entity {args.entityName} with attributes {attributes}")
-            script_utils.createEntity(db,db_schema,args.entityName,attributes)
+            # get a data sample to figure out the attributes
+            from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
+            from phg_iotfuncs.func_osipi import DEVICE_ATTR
+
+            # Fetch the Elements from OSIPi Server.
+            elemVals=getOSIPiElements(args,args.database_path,args.element_name,ATTR_FIELDS,DEVICE_ATTR)
+
+            # Get into DataFrame table form indexed by timestamp 
+            df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
+            attributes=df.columns
+            entityName=args.entityNamePrefix+TargetFunc.__name__
+            print(f"Creating entity {entityName} with attributes {attributes}")
+            script_utils.createEntity(db,db_schema,entityName,attributes)
     elif args.operation=='constant':
         from phg_iotfuncs import iotf_utils
         pprint.pprint(iotf_utils.getConstant(db, constant_name=None))

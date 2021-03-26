@@ -123,7 +123,7 @@ def inferTypesFromCSV(csv_file):
         logger.info(f"All columns have been mapped from {csv_file}: {csv_columns}")
     return csv_columns
 
-def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float()):
+def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),date_column='date'):
     '''
     Create an Entity by name and columns
     columns is expected to be an array of sqlalchemy.Column objects. if they are strings, they will be converted to Columns
@@ -133,7 +133,7 @@ def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float())
     import iotfunctions.metadata
 
     # Align Columns which are not sqlalchemy yet
-    columns=[c if isinstance(c,sqlalchemy.Column) else sqlalchemy.Column(str(c).replace(' ','_').replace('.','_'),columnType) for c in columns]
+    columns=[c if isinstance(c,sqlalchemy.Column) else sqlalchemy.Column(str(c).replace(' ','_').replace('.','_'),sqlalchemy.TIMESTAMP() if c==date_column else columnType) for c in columns]
 
     '''
     To do anything with IoT Platform Analytics, you will need one or more entity type.
