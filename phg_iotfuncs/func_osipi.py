@@ -114,15 +114,6 @@ POINT_ATTR_MAP={
 
 DEVICE_ATTR='deviceid'
 
-# List the fields we want to retrieve for Points
-POINTS_FIELDS=['Name'] # other fields are empty
-# TimeStamp field in the Points definition
-POINTS_TS_FIELD='Timestamp'
-# Value field in the Points definition
-POINTS_VAL_FIELD='Value'
-# List the Point attributes we want to retrieve
-POINTS_ATTR_FIELDS=[POINTS_VAL_FIELD,POINTS_TS_FIELD]
-
 class PhGOSIPIPreload(func_base.PhGCommonPreload):
     """
     OSIPIPreload
@@ -134,11 +125,14 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
                  osipi_preload_ok):
         super().__init__(osipi_preload_ok,f"osipi_lastseq_{name_filter.lower()}",str)
 
+        import argparse
+
         # create an instance variable with the same name as each arg
         self.osipi_host = osipi_host
         self.osipi_port = osipi_port
         self.osipi_user = osipi_user
         self.osipi_pass = osipi_pass
+        self.srvParams=argparse.Namespace(pihost=osipi_host,piport=osipi_port,piuser=osipi_user,pipass=osipi_pass)
         self.name_filter = name_filter
         self.date_field=date_field.strip()
         # Make a set out of the required fields plus date
@@ -188,15 +182,23 @@ class PhGOSIPIPreload(func_base.PhGCommonPreload):
         # Get data from IoT Event Hub
         from phg_iotfuncs import osipiutils
 
-        ptVals=osipiutils.getOSIPiPoints(self.osipi_host,self.osipi_port,self.osipi_user,self.osipi_pass,self.name_filter,POINTS_FIELDS,POINTS_ATTR_FIELDS)
-
+        ''' Test the pi Points get function '''
+        from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiPoints,mapPointValues,convertToEntities
+    
+        # Get the specified Points attributes fields from OSIServer
+        ptVals=getOSIPiPoints(self.srvParams,self.name_filter,ATTR_FIELDS)
+    
         # If no records, return immediately
         if len(ptVals)==0:
             logger.warning(f"No messages returned from OSIPi")
             return False
         logger.info(f"Retrieved messages for {len(ptVals)} attributes")
+        # Map Point values to a flattened version indexed by (deviceID,timestamp)
+        flattened=mapPointValues(ptVals,DEVICE_ATTR,POINT_ATTR_MAP)
+        
+        # Get into DataFrame table form indexed by timestamp 
+        df=convertToEntities(flattened,self.date_field,DEVICE_ATTR)
 
-        df=osipiutils.convertToEntity(ptVals,POINTS_TS_FIELD,self.date_field,DEVICE_ATTR,POINT_ATTR_MAP)
         # Store the highest sequence number
         max_timestamp=df[self.date_field].max()
         logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
