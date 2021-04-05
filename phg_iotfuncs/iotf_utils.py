@@ -96,3 +96,7 @@ def putConstant(entity_type_or_db,constant_name,new_value):
     logger.info(f"Put request rc={pprint.pformat(rc)}")
 
     return rc
+
+def toMonitorColumnName(colName):
+    ''' Map a column name for Monitor '''
+    return colName.replace(' ','_').replace('.','_')

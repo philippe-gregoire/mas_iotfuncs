@@ -182,6 +182,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
 
         # Get data from IoT Event Hub
         from phg_iotfuncs import osipiutils
+        import iotf_utils
 
         ''' Test the pi Points get function '''
         from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
@@ -198,12 +199,14 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         # Get into DataFrame table form indexed by timestamp 
         df=convertToEntities(elemVals,self.date_field,DEVICE_ATTR)
 
-        # Store the highest sequence number
+        # Extract the highest sequence number
         max_timestamp=df[self.date_field].max()
         logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
 
         # Map column names for special characters
-        df.rename({c:c.replace(' ','_').replace('.','_') for c in df.columns})
+        logger.info(f"Columns before {df.columns}")
+        df.rename({c:iotf_utils.toMonitorColumnName(c) for c in df.columns})
+        logger.info(f"Columns after {df.columns}")
 
         self.storePreload(db,table,entity_type,entity_meta_dict,df)
 

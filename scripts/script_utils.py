@@ -131,9 +131,10 @@ def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),
     logger.info(f"Creating Entity {entity_name} for {len(columns)} columns")
 
     import iotfunctions.metadata
+    import iotf_utils
 
     # Align Columns which are not sqlalchemy yet
-    columns=[c if isinstance(c,sqlalchemy.Column) else sqlalchemy.Column(str(c).replace(' ','_').replace('.','_'),sqlalchemy.TIMESTAMP() if c==date_column else columnType) for c in columns]
+    columns=[c if isinstance(c,sqlalchemy.Column) else sqlalchemy.Column(iotf_utils.toMonitorColumnName(str(c)),sqlalchemy.TIMESTAMP() if c==date_column else columnType) for c in columns]
 
     '''
     To do anything with IoT Platform Analytics, you will need one or more entity type.
