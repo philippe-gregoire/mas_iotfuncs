@@ -22,15 +22,21 @@ import script_utils
 ## Hardcoded values, will parametrize later
 # Map of points to attributes
 POINT_PREFIX='Modbus1.1.Holding16.'
-POINT_ATTR_MAP=
+POINT_ATTR_MAP_FILE="POINT_ATTR_MAP.json"
 
 def addOSIPiArgs(refPath,credsFile,parser):
 
     creds_pi=script_utils.load_creds_file(refPath,credsFile)
     for arg in ['pihost','piport','piuser','pipass']:
         parser.add_argument('-'+arg,required=False,default=creds_pi[arg] if arg in creds_pi else None)
+
     parser.add_argument('-date_field', type=str, help=f"Field containing the event date/timestamp", required=False,default='date')
+    parser.add_argument('-point_attr_map_file', type=str, help=f"OSIPi Points mapping JSON file name", required=False,default=POINT_ATTR_MAP_FILE)
     parser.add_argument('-name_filter', type=str, help=f"OSIPi Point name filter", required=False,default=f"{POINT_PREFIX}*")
+
+    parser.add_argument('-databasePath', type=str, help=f"Path to the database, e.g \\\\OSISOFT-SERVER\\IBM_FabLab", required=False,default='\\\\OSISOFT-SERVER\\IBM_FabLab')
+    parser.add_argument('-elementName', type=str, help=f"Parent Element name", required=False,default='Motor')
+
 
 def main(argv):
     '''
