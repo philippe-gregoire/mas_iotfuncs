@@ -4,10 +4,8 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
-
         {
-            "name": "Python : TestOSIPIAPI",
+            "name": "Python : TestOSIPIAPI Elements",
             "type": "python",
             "request": "launch",
             "program": "scripts/TestOSIPIAPI.py",
@@ -25,7 +23,7 @@
             "justMyCode": false
         },
         {
-            "name": "Python : register OSIPI Elements",
+            "name": "Python : register OSIPI Elements function",
             "type": "python",
             "request": "launch",
             "program": "scripts/test_OSIPiPreload.py",
@@ -36,7 +34,7 @@
             "preLaunchTask": "cls"
         },
         {
-            "name": "Python : register OSIPI Points",
+            "name": "Python : register OSIPI Points function",
             "type": "python",
             "request": "launch",
             "program": "scripts/test_OSIPiPreload.py",
@@ -47,11 +45,22 @@
             "preLaunchTask": "cls"
         },
         {
-            "name": "Python : test OSIPI",
+            "name": "Python : test OSIPI Points",
             "type": "python",
             "request": "launch",
             "program": "scripts/test_OSIPiPreload.py",
-            "args": ["test"],
+            "args": ["test","Points"],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"},
+            "preLaunchTask": "cls"
+        },
+        {
+            "name": "Python : test OSIPI Elements",
+            "type": "python",
+            "request": "launch",
+            "program": "scripts/test_OSIPiPreload.py",
+            "args": ["test","Elements"],
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"},
