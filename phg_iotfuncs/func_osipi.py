@@ -206,7 +206,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
 
         # Map column names for special characters
         logger.info(f"Columns before {df.columns}")
-        df.rename({c:iotf_utils.toMonitorColumnName(c) for c in df.columns})
+        df.rename({c:iotf_utils.toMonitorColumnName(c) for c in df.columns},inplace=True)
         logger.info(f"Columns after {df.columns}")
 
         self.storePreload(db,table,entity_type,entity_meta_dict,df)
