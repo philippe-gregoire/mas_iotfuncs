@@ -176,13 +176,14 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
             Implement the preload code
         """
         import iotfunctions.metadata
-        from phg_iotfuncs import iotf_utils
         import numpy as np, pandas as pd
         import datetime as dt
 
-        # Get data from IoT Event Hub
+        # Import our utilities for IoTF
+        from phg_iotfuncs import iotf_utils
+
+        # Import OSIPi helper utilities
         from phg_iotfuncs import osipiutils
-        import iotf_utils
 
         ''' Test the pi Points get function '''
         from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
