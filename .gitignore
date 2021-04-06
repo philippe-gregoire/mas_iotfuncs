@@ -149,7 +149,8 @@ pmip
 .sw[nop]
 *.tmp
 *.vim
-.vscode
+.vscode/**
+!.vscode/launch.json
 tags
 cscope.out
 # gnu global
