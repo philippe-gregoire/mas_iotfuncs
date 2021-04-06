@@ -19,8 +19,12 @@ logger = logging.getLogger(__name__)
 
 import script_utils
 
+## Hardcoded values, will parametrize later
+# Map of points to attributes
+POINT_PREFIX='Modbus1.1.Holding16.'
+POINT_ATTR_MAP=
+
 def addOSIPiArgs(refPath,credsFile,parser):
-    from phg_iotfuncs.func_osipi import POINT_PREFIX
 
     creds_pi=script_utils.load_creds_file(refPath,credsFile)
     for arg in ['pihost','piport','piuser','pipass']:
