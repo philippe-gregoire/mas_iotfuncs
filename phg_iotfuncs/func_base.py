@@ -101,11 +101,11 @@ class PhGCommonPreload(BasePreload):
         logger.info(f"Incoming df columns={df.columns}")
 
         # Use lowercased required column names
-        required_cols =[c.lower() for c in  db.get_column_names(table=table, schema=entity_type._db_schema)]
+        required_cols =[c.lower() if c.lower()!='date' else c for c in  db.get_column_names(table=table, schema=entity_type._db_schema)]
         logger.info(f"Required db columns={required_cols}")
 
-        # user lowercased names for dataframe too
-        df.rename(columns={c:c.lower() for c in df.columns},inplace=True)
+        # user lowercased names for dataframe too, except for DATE field
+        df.rename(columns={c:c.lower() for c in df.columns if c.lower()!='date'},inplace=True)
 
         # drop all columns not in the target
         df.drop(columns=[c for c in df.columns if c not in required_cols],inplace=True)
