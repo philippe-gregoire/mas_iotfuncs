@@ -83,6 +83,9 @@ class PhGCommonPreload(BasePreload):
     def renameToDBColumns(df,entity_meta_dict):
         """ Rename to database Column's names
         """
+        # Map column names for special characters
+        df.rename(columns={c:iotf_utils.toMonitorColumnName(c) for c in df.columns},inplace=True)
+
         # Get the table column names from metadata
         columnMap={d['name']:d['columnName'] for d in entity_meta_dict['dataItems'] if d['type']=='METRIC'}
         logger.info(f"Column map {pprint.pformat(columnMap)}")

@@ -124,11 +124,10 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         max_timestamp=df[self.date_field].max()
         logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
 
-        # Map column names for special characters
-        logger.info(f"Columns 2-before {df.columns}")
-        df.rename(columns={c:iotf_utils.toMonitorColumnName(c) for c in df.columns},inplace=True)
-        logger.info(f"Columns 2-after {df.columns}")
+        # Map column names
+        self.renameToDBColumns(df,entity_meta_dict)
 
+        # Store the df
         self.storePreload(db,table,entity_type,entity_meta_dict,df)
 
         # update sequence number, use global constant
