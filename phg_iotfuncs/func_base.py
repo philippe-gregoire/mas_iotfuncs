@@ -99,17 +99,18 @@ class PhGCommonPreload(BasePreload):
         import datetime as dt
 
         logger.info(f"Incoming df columns={df.columns}")
-        required_cols = db.get_column_names(table=table, schema=entity_type._db_schema)
+
+        # Use uppercased required column names
+        required_cols =[c.upper() for c in  db.get_column_names(table=table, schema=entity_type._db_schema)]
         logger.info(f"Required db columns={required_cols}")
-        # keepColumns=['_timestamp']+[v for v in columnMap.values()]+['updated_utc']
+
+        # user uppercased names for dataframe too
+        df.rename(columns={c:c.lower() for c in df.columns},inplace=True)
+
         # drop all columns not in the target
         df.drop(columns=[c for c in df.columns if c not in required_cols],inplace=True)
         logger.info(f"df columns keeping required only={[c for c in df.columns]}")
 
-        # Map the column names (we use lower() here because runtime metadata is different from test)
-        # logger.info(f"df columns before={[c for c in df.columns]}")
-        # df.rename(columns={c:c.lower() for c in df.columns},inplace=True)
-        # df.rename(columns={m['name']: m['columnName'] for m in entityMetaDict['dataItemDto']},inplace=True)
         missing_cols = list(set(required_cols) - set(df.columns))
         if len(missing_cols) > 0:
             entity_type.trace_append(created_by=self, msg='OSIPI data was missing columns. Adding values.',
@@ -121,6 +122,7 @@ class PhGCommonPreload(BasePreload):
                 elif m == 'devicetype':
                     df[m] = entity_type.logical_name
                 elif m == 'eventtype':
+                    logger.info(f"Setting df[{m}] to {OSI_PI_EVENT}")
                     df[m] = OSI_PI_EVENT
                 else:
                     logger.info(f"Setting df[{m}] to None")
