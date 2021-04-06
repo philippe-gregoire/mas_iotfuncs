@@ -21,6 +21,7 @@ import iotfunctions.db
 
 logger = logging.getLogger(__name__)
 
+OSI_PI_EVENT = "OSIPiEvent"
 
 class PhGCommonPreload(BasePreload):
     """
@@ -80,7 +81,7 @@ class PhGCommonPreload(BasePreload):
         iotf_utils.putConstant(db,self.lastseq_constant,sequence_number)
         logger.info(f"Updated constant {self.lastseq_constant} to value {sequence_number}")
 
-    def renameToDBColumns(df,entity_meta_dict):
+    def renameToDBColumns(self,df,entity_meta_dict):
         """ Rename to database Column's names
         """
         # Map column names for special characters
@@ -119,6 +120,8 @@ class PhGCommonPreload(BasePreload):
                     df[m] = dt.datetime.utcnow() - dt.timedelta(seconds=15)
                 elif m == 'devicetype':
                     df[m] = entity_type.logical_name
+                elif m == 'eventtype':
+                    df[m] = OSI_PI_EVENT
                 else:
                     logger.info(f"Setting df[{m}] to None")
                     df[m] = None
