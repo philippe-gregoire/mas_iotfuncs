@@ -143,7 +143,7 @@ class PhGOSIPIPointsPreload(func_base.PhGCommonPreload):
     """
 
     def __init__(self, osipi_host, osipi_port, osipi_user, osipi_pass, 
-                 name_filter, date_field,
+                 name_filter, points_attr_map, date_field,
                  osipi_preload_ok):
         super().__init__(osipi_preload_ok,f"osipi_lastseq_{name_filter.lower()}",str)
 
