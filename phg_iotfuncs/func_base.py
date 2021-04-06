@@ -19,6 +19,8 @@ import logging,pprint
 from iotfunctions.base import BaseTransformer, BaseDataSource, BasePreload
 import iotfunctions.db
 
+from phg_iotfuncs import iotf_utils
+
 logger = logging.getLogger(__name__)
 
 OSI_PI_EVENT = "OSIPiEvent"
@@ -39,8 +41,7 @@ class PhGCommonPreload(BasePreload):
         ''' When extending this class, do not override execute(), but implement preload()
         '''
         import iotfunctions.metadata
-        from phg_iotfuncs import iotf_utils
-
+        
         import numpy as np, pandas as pd
         import datetime as dt
 
@@ -77,7 +78,6 @@ class PhGCommonPreload(BasePreload):
         """
             Update the sequence number stored for the Entity
         """
-        from phg_iotfuncs import iotf_utils
         iotf_utils.putConstant(db,self.lastseq_constant,sequence_number)
         logger.info(f"Updated constant {self.lastseq_constant} to value {sequence_number}")
 
