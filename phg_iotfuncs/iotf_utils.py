@@ -105,23 +105,23 @@ def renameToDBColumns(df,entity_meta_dict):
     """ Rename an entity dataframe to database Column's names
     """
     # Map column names for special characters
-    df.rename(columns={c:iotf_utils.toMonitorColumnName(c) for c in df.columns},inplace=True)
+    df.rename(columns={c:toMonitorColumnName(c) for c in df.columns},inplace=True)
 
     # Get the table column names from metadata
     columnMap={d['name']:d['columnName'] for d in entity_meta_dict['dataItems'] if d['type']=='METRIC'}
     logger.info(f"Column map {pprint.pformat(columnMap)}")
     df.rename(columns=columnMap,inplace=True)
 
-def adjustDataFrameColumns(db,table,entity_type,entity_meta_dict,df,eventType,force_upper_columns):
+def adjustDataFrameColumns(db,entity_meta_dict,df,eventType,force_upper_columns):
     """
     Adjust the raw dataframe columns to match expected format by IoTF DB
     """
     import datetime as dt
 
     logger.info(f"Adjust: Incoming df columns={df.columns}")
-
+    
     # Extract the columns names required in the DB schema
-    db_column_names=db.get_column_names(table=table, schema=entity_type._db_schema)
+    db_column_names=db.get_column_names(table=entity_meta_dict['metricsTableName'], schema=entity_meta_dict['schemaName'])
 
     # List required column names, based on lowercased names
     required_lower_cols =[c.lower() for c in  db_column_names]
@@ -139,10 +139,10 @@ def adjustDataFrameColumns(db,table,entity_type,entity_meta_dict,df,eventType,fo
     if len(missing_cols) > 0:
         logger.info(f"Missing {len(missing_cols)} columns in incoming dataframe. Adding values for {missing_cols}")
         for m in missing_cols:
-            if m == entity_type._timestamp:
+            if m == entity_meta_dict['metricTimestampColumn']:
                 df[m] = dt.datetime.utcnow() - dt.timedelta(seconds=15)
             elif m == 'devicetype':
-                df[m] = entity_type.logical_name
+                df[m] = entity_meta_dict['entityTypeName']
             elif m == 'eventtype':
                 logger.info(f"Setting df[{m}] to {eventType}")
                 df[m] = eventType
@@ -156,3 +156,5 @@ def adjustDataFrameColumns(db,table,entity_type,entity_meta_dict,df,eventType,fo
         df.rename(columns={c:c.upper() for c in df.columns if c.upper() in force_upper_columns}, inplace=True)
 
     logger.info(f"df columns final={[c for c in df.columns]}")
+
+    return

@@ -158,7 +158,6 @@ def getOSIPiElements(piSrvParams, databasePath,elementName,valueFields,deviceAtt
     sensorValues={}
     for sensor in r_elements['Items']:
         deviceId=sensor['Name']
-        sensorValues[sensor['Name']]={}
         r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?selectedFields=Items.Name;{selectedFields(valueFields,'Items.Items')}")
         if logger.isEnabledFor(logging.DEBUG): pprint(r_data)
         for d in r_data['Items']:

@@ -90,15 +90,15 @@ class PhGCommonPreload(BasePreload):
         logger.info(f"Column map {pprint.pformat(columnMap)}")
         df.rename(columns=columnMap,inplace=True)
 
-    def storePreload(self,db,table,entity_type,entity_meta_dict,df,event_type,force_upper_columns=[]):
+    def storePreload(self,db,entity_meta_dict,df,event_type,force_upper_columns=[]):
         """
         Store the Preload data, to be used by preload override
         """
         import iotf_utils
-        iotf_utils.adjustDataFrame(db,table,entity_type,entity_meta_dict,df,event_type,force_upper_columns)
+        iotf_utils.adjustDataFrameColumns(db,entity_meta_dict,df,event_type,force_upper_columns)
 
-        logger.info(f"Writing df {df.shape} to {table}")
-        self.write_frame(df=df, table_name=table)
-        entity_type.trace_append(created_by=self, msg='Wrote data to table', log_method=logger.debug, **{'table_name': table, 'schema': entity_type._db_schema, 'row_count': len(df.index)})
+        logger.info(f"Writing df {df.shape} to {entity_meta_dict['metricsTableName']}")
+        self.write_frame(df=df, table_name=entity_meta_dict['metricsTableName'])
+        entity_type.trace_append(created_by=self, msg='Wrote data to table', log_method=logger.debug, **{'table_name': entity_meta_dict['metricsTableName'], 'schema': entity_meta_dict['schemaName'], 'row_count': len(df.index)})
 
         return True

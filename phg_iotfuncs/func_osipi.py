@@ -128,7 +128,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         iotf_utils.renameToDBColumns(df,entity_meta_dict)
 
         # Store the df
-        self.storePreload(db,table,entity_type,entity_meta_dict,df,OSI_PI_EVENT,[self.date_field])
+        self.storePreload(db,entity_meta_dict,df,OSI_PI_EVENT,[self.date_field])
 
         # update sequence number, use global constant
         self.updateLastSeq(db,str(max_timestamp))
@@ -227,7 +227,7 @@ class PhGOSIPIPointsPreload(func_base.PhGCommonPreload):
         max_timestamp=df[self.date_field].max()
         logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
 
-        self.storePreload(db,table,entity_type,entity_meta_dict,df,OSI_PI_EVENT,[self.date_field])
+        self.storePreload(db,entity_meta_dict,df,OSI_PI_EVENT,[self.date_field])
 
         # update sequence number, use global constant
         self.updateLastSeq(db,str(max_timestamp))

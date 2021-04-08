@@ -53,7 +53,7 @@ def main(argv):
     parser = argparse.ArgumentParser(description=f"Tester for OSIPI iotfunctions")
     addOSIPiArgs(argv[0],'credentials_osipi',parser)
 
-    parser.add_argument('operation', type=str, help=f"Operation", choices=['test','register','create','constant','k','osipi'], default='test')
+    parser.add_argument('operation', type=str, help=f"Operation", choices=['test','register','dbtest','create','constant','k','osipi'], default='test')
     parser.add_argument('ositype', type=str, help=f"Type of OSI API", choices=['Points','Elements'])
     parser.add_argument('-const_name', type=str, help=f"Name of constant", default=None)
     parser.add_argument('-const_value', type=str, help=f"Value for constant", default=None)
@@ -73,6 +73,7 @@ def main(argv):
 
     if args.ositype=='Points':
         from phg_iotfuncs.func_osipi import PhGOSIPIPointsPreload as TargetFunc
+        entityName=args.entityNamePrefix+TargetFunc.__name__
         if args.operation=='test':
             test(db,db_schema,TargetFunc,
                     args.pihost, args.piport,
@@ -83,11 +84,11 @@ def main(argv):
         elif args.operation=='create':
             from phg_iotfuncs.func_osipi import POINT_ATTR_MAP
             attributes=list(dict.fromkeys([v[1] for v in POINT_ATTR_MAP.values()]))
-            entityName=args.entityNamePrefix+TargetFunc.__name__
             print(f"Creating entity {entityName} with attributes {attributes}")
             script_utils.createEntity(db,db_schema,entityName,attributes)
     elif args.ositype=='Elements':
         from phg_iotfuncs.func_osipi import PhGOSIElemsPreload as TargetFunc
+        entityName=args.entityNamePrefix+TargetFunc.__name__
         if args.operation=='test':
             test(db,db_schema,TargetFunc,
                     args.pihost, args.piport,
@@ -107,16 +108,37 @@ def main(argv):
             # Get into DataFrame table form indexed by timestamp 
             df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
             attributes=df.columns
-            entityName=args.entityNamePrefix+TargetFunc.__name__
             print(f"Creating entity {entityName} with attributes {attributes}")
             script_utils.createEntity(db,db_schema,entityName,attributes)
+        elif args.operation=='dbtest':
+            import iotfunctions
+            from phg_iotfuncs import iotf_utils
+
+            # get a data sample to figure out the attributes
+            from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
+            from phg_iotfuncs.func_osipi import DEVICE_ATTR
+
+            # Fetch the Elements from OSIPi Server.
+            elemVals=getOSIPiElements(args,args.database_path,args.element_name,ATTR_FIELDS,DEVICE_ATTR)
+
+            # Get into DataFrame table form indexed by timestamp 
+            df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
+            
+            entity_type_dict,entity_meta_dict=iotfunctions.metadata.retrieve_entity_type_metadata(_db=db,logical_name=entityName)
+            iotf_utils.renameToDBColumns(df,entity_meta_dict)
+
+            iotf_utils.adjustDataFrameColumns(db,entity_meta_dict,df,'OSItest',['date'])
+
+            rc=db.write_frame(df=df, table_name=entity_meta_dict['metricsTableName'])
+            print(f"Written {len(df)} rows, rc={rc}")
+
     elif args.operation=='constant':
         from phg_iotfuncs import iotf_utils
         pprint.pprint(iotf_utils.getConstant(db, constant_name=None))
         if args.const_name is not None and args.const_value is not None:
             iotf_utils.putConstant(db,args.const_name,args.const_value)
-    elif args.operation=='k':
-        from s import iotf_utils
+    elif args.operation=='list_k':
+        from phg_iotfuncs import iotf_utils
         k_name=args.lastseq_constant
         k_desc='PhG Konst'
         try:

@@ -77,6 +77,16 @@
             "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"}
         },
         {
+            "name": "Python : dbtest Entity OSIPI Elements",
+            "type": "python",
+            "request": "launch",
+            "program": "scripts/test_OSIPiPreload.py",
+            "args": ["dbtest","Elements","-database_path","\\\\OSISOFT-SERVER\\IBM_FabLab","-element_name","Motor"],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"}
+        },
+        {
             "name": "Python : create Entity OSIPI Points",
             "type": "python",
             "request": "launch",
