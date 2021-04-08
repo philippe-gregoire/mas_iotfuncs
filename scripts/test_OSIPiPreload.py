@@ -37,7 +37,6 @@ def addOSIPiArgs(refPath,credsFile,parser):
     parser.add_argument('-databasePath', type=str, help=f"Path to the database, e.g \\\\OSISOFT-SERVER\\IBM_FabLab", required=False,default='\\\\OSISOFT-SERVER\\IBM_FabLab')
     parser.add_argument('-elementName', type=str, help=f"Parent Element name", required=False,default='Motor')
 
-
 def main(argv):
     '''
     You can test functions locally before registering them on the server to
@@ -53,7 +52,7 @@ def main(argv):
     parser = argparse.ArgumentParser(description=f"Tester for OSIPI iotfunctions")
     addOSIPiArgs(argv[0],'credentials_osipi',parser)
 
-    parser.add_argument('operation', type=str, help=f"Operation", choices=['test','register','dbtest','create','constant','k','osipi'], default='test')
+    parser.add_argument('operation', type=str, help=f"Operation", choices=['test','register','dbtest','create','constant','k','list'], default='test')
     parser.add_argument('ositype', type=str, help=f"Type of OSI API", choices=['Points','Elements'])
     parser.add_argument('-const_name', type=str, help=f"Name of constant", default=None)
     parser.add_argument('-const_value', type=str, help=f"Value for constant", default=None)
@@ -86,6 +85,11 @@ def main(argv):
             attributes=list(dict.fromkeys([v[1] for v in POINT_ATTR_MAP.values()]))
             print(f"Creating entity {entityName} with attributes {attributes}")
             script_utils.createEntity(db,db_schema,entityName,attributes)
+        elif args.operation=='list':
+            # List all Points defined in the target OSIPi server
+            from phg_iotfuncs.osipiutils import listOSIPiPoints
+            listOSIPiPoints(args)
+
     elif args.ositype=='Elements':
         from phg_iotfuncs.func_osipi import PhGOSIElemsPreload as TargetFunc
         entityName=args.entityNamePrefix+TargetFunc.__name__

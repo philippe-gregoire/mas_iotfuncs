@@ -19,6 +19,15 @@ from pprint import pprint
 
 logger = logging.getLogger(__name__)
 
+# Mapping of OSIPi Types to Python types
+OSIPI_TYPES_MAP={
+    'String': str,
+    'Float32': float,
+    'Float64': float,
+    'Digital': bool,
+    'Int32': int,
+}
+
 # Name of the field holding an attribute's timestamp
 ATTR_FIELD_TS='Timestamp'
 # Name of the field holding an attribute's value
@@ -51,9 +60,7 @@ def selectedFields(fields,prefix='Items',sep=';'):
     ''' Helper function '''
     return sep.join([f"{prefix}.{f}" for f in fields])
 
-def getOSIPiPoints(piSrvParams, pointsNameFilter,valueFields):
-    ''' Get Point values from OSIPi API server
-    '''
+def _getDataServers(piSrvParams):
     # Navigate to API root
     r_root=getFromPi(piSrvParams)
     if logger.isEnabledFor(logging.DEBUG): pprint(r_root)
@@ -61,20 +68,40 @@ def getOSIPiPoints(piSrvParams, pointsNameFilter,valueFields):
     # Navigate to DataServers
     r_datasrvrs=getFromPi(piSrvParams,r_root['Links']['DataServers'])
     if logger.isEnabledFor(logging.DEBUG): pprint(r_datasrvrs)
+    
+    return r_datasrvrs
+
+def listOSIPiPoints(piSrvParams):
+    ''' List available Points
+    '''
+    r_datasrvrs=_getDataServers(piSrvParams)
+    
+    for datasrv in r_datasrvrs['Items']:
+        print(f"Data Server {datasrv['Name']}")
+        r_points=getFromPi(piSrvParams,datasrv['Links']['Points'])
+        #r_points=getFromPi(piSrvParams,f"{datasrv['Links']['Points']}?selectedFields=Items.Name;Items.Links.RecordedData")
+
+        for point in r_points['Items']:
+            print(f"{point['Name']}\tType={point['PointType']}\tSpan={point['Span']}\tZero={point['Zero']}")
+
+def getOSIPiPoints(piSrvParams, pointsNameFilter,valueFields):
+    ''' Get Point values from OSIPi API server
+    '''
+    r_datasrvrs=_getDataServers(piSrvParams)
 
     # Navigate to Points in first Item
     for datasrv in r_datasrvrs['Items']:
         if logger.isEnabledFor(logging.DEBUG): pprint(datasrv)
         # build the request to get only points matching the provided filter and only selected fields        
-        r_points=getFromPi(piSrvParams,f"{datasrv['Links']['Points']}?nameFilter={pointsNameFilter}&selectedFields=Items.Name;Items.Links.RecordedData")
+        r_points=getFromPi(piSrvParams,f"{datasrv['Links']['Points']}?nameFilter={pointsNameFilter}&selectedFields=Items.Name;Items.PointType,Items.Links.RecordedData")
         # pprint(r_points)
         logger.info(f"Found {len(r_points['Items'])} points that match filter {pointsNameFilter}")
 
         # Dump first point for debugging
         if logger.isEnabledFor(logging.DEBUG): pprint(r_points['Items'][0])
-
         if logger.isEnabledFor(logging.DEBUG): pprint(getFromPi(piSrvParams,r_points['Items'][0]['Links']['RecordedData']))
-        # pprint(getFromPi(args,r_points['Items'][0]['Links']['RecordedData']+'?selectedFields=Items.Value'))
+
+        # Get the values
         pointValues={}
         for point in r_points['Items']:
             r_ptvals=getFromPi(piSrvParams,point['Links']['RecordedData']+f"?selectedFields={selectedFields(valueFields)}")
@@ -146,7 +173,7 @@ def getParentElements(piSrvParams,databasePath,elementName):
     r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Links.Elements&nameFilter={elementName}")
 
     # We get the parent element, now list the sensors within
-    r_elements=getFromPi(piSrvParams,f"{r_elements['Items'][0]['Links']['Elements']}?selectedFields=Items.Name;Items.Links.RecordedData")
+    r_elements=getFromPi(piSrvParams,f"{r_elements['Items'][0]['Links']['Elements']}?selectedFields=Items.Name;Items.PointType,Items.Links.RecordedData")
     if logger.isEnabledFor(logging.DEBUG): pprint(r_elements)
 
     return r_elements
@@ -158,10 +185,11 @@ def getOSIPiElements(piSrvParams, databasePath,elementName,valueFields,deviceAtt
     sensorValues={}
     for sensor in r_elements['Items']:
         deviceId=sensor['Name']
-        r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?selectedFields=Items.Name;{selectedFields(valueFields,'Items.Items')}")
+        r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}")
         if logger.isEnabledFor(logging.DEBUG): pprint(r_data)
         for d in r_data['Items']:
             attr_name=d['Name']
+            attr_type=d['PointType']
             for item in d['Items']:
                 ts=item[ATTR_FIELD_TS]
                 if (ts,deviceId) not in sensorValues:
