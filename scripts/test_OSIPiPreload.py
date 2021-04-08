@@ -114,6 +114,10 @@ def main(argv):
             attributes=df.columns
             print(f"Creating entity {entityName} with attributes {attributes}")
             script_utils.createEntity(db,db_schema,entityName,attributes)
+        elif args.operation=='list':
+            # List all Points defined in the target OSIPi server
+            from phg_iotfuncs.osipiutils import listOSIPiElements
+            listOSIPiElements(args)
         elif args.operation=='dbtest':
             import iotfunctions
             from phg_iotfuncs import iotf_utils
