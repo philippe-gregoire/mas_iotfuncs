@@ -79,22 +79,10 @@ class PhGCommonPreload(BasePreload):
         iotf_utils.putConstant(db,self.lastseq_constant,sequence_number)
         logger.info(f"Updated constant {self.lastseq_constant} to value {sequence_number}")
 
-    def renameToDBColumns(self,df,entity_meta_dict):
-        """ Rename to database Column's names
-        """
-        # Map column names for special characters
-        df.rename(columns={c:iotf_utils.toMonitorColumnName(c) for c in df.columns},inplace=True)
-
-        # Get the table column names from metadata
-        columnMap={d['name']:d['columnName'] for d in entity_meta_dict['dataItems'] if d['type']=='METRIC'}
-        logger.info(f"Column map {pprint.pformat(columnMap)}")
-        df.rename(columns=columnMap,inplace=True)
-
     def storePreload(self,db,entity_meta_dict,df,event_type,force_upper_columns=[]):
         """
         Store the Preload data, to be used by preload override
         """
-        import iotf_utils
         iotf_utils.adjustDataFrameColumns(db,entity_meta_dict,df,event_type,force_upper_columns)
 
         logger.info(f"Writing df {df.shape} to {entity_meta_dict['metricsTableName']}")
