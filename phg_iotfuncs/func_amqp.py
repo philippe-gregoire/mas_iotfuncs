@@ -161,7 +161,7 @@ class PhGAMQPPreload(func_base.PhGCommonPreload):
 
         logger.info(f"df columns after metadata drop={[c for c in df.columns]}")
 
-        self.storePreload(db,table,entity_type,entity_meta_dict,df)
+        self.storePreload(db,table,entity_type,entity_meta_dict,df,'AMPQ_Event',[])
 
         # update sequence number, use global constant
         self.updateLastSeq(db,max_sequence_number)

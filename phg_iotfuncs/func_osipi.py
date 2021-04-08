@@ -34,6 +34,8 @@ PACKAGE_URL = f"git+https://github.com/philippe-gregoire/mas_iotfuncs@master"
 
 DEVICE_ATTR='deviceid'
 
+OSI_PI_EVENT = "OSIPiEvent"
+
 class PhGOSIElemsPreload(func_base.PhGCommonPreload):
     """
     OSIPIElementsPreload
@@ -93,7 +95,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
 
     def preload(self,entity_type,db,table,entityMetaDict,params,entity_meta_dict,last_seq):
         """
-            Implement the preload code
+            Implement the preload code for OSIPi Elements API
         """
         import iotfunctions.metadata
         import numpy as np, pandas as pd
@@ -104,8 +106,6 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
 
         # Import OSIPi helper utilities
         from phg_iotfuncs import osipiutils
-
-        ''' Test the pi Points get function '''
         from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
     
         # Get the specified Points attributes fields from OSIServer
@@ -125,10 +125,10 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
 
         # Map column names
-        self.renameToDBColumns(df,entity_meta_dict)
+        iotf_utils.renameToDBColumns(df,entity_meta_dict)
 
         # Store the df
-        self.storePreload(db,table,entity_type,entity_meta_dict,df,[self.date_field])
+        self.storePreload(db,table,entity_type,entity_meta_dict,df,OSI_PI_EVENT,[self.date_field])
 
         # update sequence number, use global constant
         self.updateLastSeq(db,str(max_timestamp))
@@ -196,7 +196,7 @@ class PhGOSIPIPointsPreload(func_base.PhGCommonPreload):
 
     def preload(self,entity_type,db,table,entityMetaDict,params,entity_meta_dict,last_seq):
         """
-            Implement the preload code
+            Implement the preload code for OSIPi Points API
         """
         import iotfunctions.metadata
         from phg_iotfuncs import iotf_utils
@@ -227,7 +227,7 @@ class PhGOSIPIPointsPreload(func_base.PhGCommonPreload):
         max_timestamp=df[self.date_field].max()
         logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
 
-        self.storePreload(db,table,entity_type,entity_meta_dict,df,[self.date_field])
+        self.storePreload(db,table,entity_type,entity_meta_dict,df,OSI_PI_EVENT,[self.date_field])
 
         # update sequence number, use global constant
         self.updateLastSeq(db,str(max_timestamp))

@@ -100,3 +100,59 @@ def putConstant(entity_type_or_db,constant_name,new_value):
 def toMonitorColumnName(colName):
     ''' Map a column name for Monitor '''
     return colName.replace(' ','_').replace('.','_')
+
+def renameToDBColumns(df,entity_meta_dict):
+    """ Rename an entity dataframe to database Column's names
+    """
+    # Map column names for special characters
+    df.rename(columns={c:iotf_utils.toMonitorColumnName(c) for c in df.columns},inplace=True)
+
+    # Get the table column names from metadata
+    columnMap={d['name']:d['columnName'] for d in entity_meta_dict['dataItems'] if d['type']=='METRIC'}
+    logger.info(f"Column map {pprint.pformat(columnMap)}")
+    df.rename(columns=columnMap,inplace=True)
+
+def adjustDataFrameColumns(db,table,entity_type,entity_meta_dict,df,eventType,force_upper_columns):
+    """
+    Adjust the raw dataframe columns to match expected format by IoTF DB
+    """
+    import datetime as dt
+
+    logger.info(f"Adjust: Incoming df columns={df.columns}")
+
+    # Extract the columns names required in the DB schema
+    db_column_names=db.get_column_names(table=table, schema=entity_type._db_schema)
+
+    # List required column names, based on lowercased names
+    required_lower_cols =[c.lower() for c in  db_column_names]
+    logger.info(f"Required db lowercased columns={required_lower_cols}")
+
+    # user lowercased names for dataframe too, except for keep_case_columns field
+    lower_columns_map={c:c.lower() for c in df.columns}
+    df.rename(columns=lower_columns_map,inplace=True)
+
+    # drop all columns not in the target
+    df.drop(columns=[c for c in df.columns if c not in required_lower_cols],inplace=True)
+    logger.info(f"df columns keeping required only={[c for c in df.columns]}")
+
+    missing_cols = list(set(required_lower_cols) - set(df.columns))
+    if len(missing_cols) > 0:
+        logger.info(f"Missing {len(missing_cols)} columns in incoming dataframe. Adding values for {missing_cols}")
+        for m in missing_cols:
+            if m == entity_type._timestamp:
+                df[m] = dt.datetime.utcnow() - dt.timedelta(seconds=15)
+            elif m == 'devicetype':
+                df[m] = entity_type.logical_name
+            elif m == 'eventtype':
+                logger.info(f"Setting df[{m}] to {eventType}")
+                df[m] = eventType
+            else:
+                logger.info(f"Setting df[{m}] to None")
+                df[m] = None
+
+    # Some columns need to be uppercased, do it now before submitting to storage
+    if force_upper_columns and len(force_upper_columns)>0:
+        force_upper_columns=[c.upper() for c in force_upper_columns]
+        df.rename(columns={c:c.upper() for c in df.columns if c.upper() in force_upper_columns}, inplace=True)
+
+    logger.info(f"df columns final={[c for c in df.columns]}")
