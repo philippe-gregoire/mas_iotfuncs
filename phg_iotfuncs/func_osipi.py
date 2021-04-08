@@ -227,7 +227,7 @@ class PhGOSIPIPointsPreload(func_base.PhGCommonPreload):
         max_timestamp=df[self.date_field].max()
         logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
 
-        self.storePreload(db,table,entity_type,entity_meta_dict,df)
+        self.storePreload(db,table,entity_type,entity_meta_dict,df,[self.date_field])
 
         # update sequence number, use global constant
         self.updateLastSeq(db,str(max_timestamp))

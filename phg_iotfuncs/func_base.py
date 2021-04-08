@@ -92,7 +92,7 @@ class PhGCommonPreload(BasePreload):
         logger.info(f"Column map {pprint.pformat(columnMap)}")
         df.rename(columns=columnMap,inplace=True)
 
-    def storePreload(self,db,table,entity_type,entity_meta_dict,df,keep_case_columns=[]):
+    def storePreload(self,db,table,entity_type,entity_meta_dict,df,force_upper_columns=[]):
         """
         Store the Preload data, to be used by preload override
         """
@@ -100,21 +100,22 @@ class PhGCommonPreload(BasePreload):
 
         logger.info(f"Incoming df columns={df.columns}")
 
-        # Extract the columns names rquired in the DB schema
+        # Extract the columns names required in the DB schema
         db_column_names=db.get_column_names(table=table, schema=entity_type._db_schema)
 
         # List required column names, based on lowercased names
-        required_cols =[c if c in keep_case_columns else c.lower() for c in  db_column_names]
-        logger.info(f"Required db columns={required_cols}")
+        required_lower_cols =[c.lower() for c in  db_column_names]
+        logger.info(f"Required db lowercased columns={required_lower_cols}")
 
         # user lowercased names for dataframe too, except for keep_case_columns field
-        df.rename(columns={c:c.lower() for c in df.columns if c not in keep_case_columns},inplace=True)
+        lower_columns_map={c:c.lower() for c in df.columns}
+        df.rename(columns=lower_columns_map,inplace=True)
 
         # drop all columns not in the target
-        df.drop(columns=[c for c in df.columns if c not in required_cols],inplace=True)
+        df.drop(columns=[c for c in df.columns if c not in required_lower_cols],inplace=True)
         logger.info(f"df columns keeping required only={[c for c in df.columns]}")
 
-        missing_cols = list(set(required_cols) - set(df.columns))
+        missing_cols = list(set(required_lower_cols) - set(df.columns))
         if len(missing_cols) > 0:
             entity_type.trace_append(created_by=self, msg='OSIPI data was missing columns. Adding values.',
                                      log_method=logger.debug, **{'missing_cols': missing_cols})
@@ -131,10 +132,10 @@ class PhGCommonPreload(BasePreload):
                     logger.info(f"Setting df[{m}] to None")
                     df[m] = None
 
-        # Somehow the date column needs to be uppercased, lets's just make a copy for now...
-        for c in keep_case_columns:
-            pass
-            #df[c.upper()]=df[c.lower()]
+        # Some columns need to be uppercased, do it now before submitting to storage
+        if force_upper_columns and len(force_upper_columns)>0:
+            force_upper_columns=[c.upper() for c in force_upper_columns]
+            df.rename(columns={c:c.upper() for c in df.columns if c.upper() in force_upper_columns}, inplace=True)
 
         logger.info(f"df columns final={[c for c in df.columns]}")
         logger.info(f"Writing df {df.shape} to {table}")
