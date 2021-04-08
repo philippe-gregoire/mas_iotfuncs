@@ -87,6 +87,6 @@ class PhGCommonPreload(BasePreload):
 
         logger.info(f"Writing df {df.shape} to {entity_meta_dict['metricsTableName']}")
         self.write_frame(df=df, table_name=entity_meta_dict['metricsTableName'])
-        entity_type.trace_append(created_by=self, msg='Wrote data to table', log_method=logger.debug, **{'table_name': entity_meta_dict['metricsTableName'], 'schema': entity_meta_dict['schemaName'], 'row_count': len(df.index)})
+        logger.debug(f"Wrote {len(df.index)} rows to table {entity_meta_dict['schemaName']}.{entity_meta_dict['metricsTableName']}")
 
         return True
