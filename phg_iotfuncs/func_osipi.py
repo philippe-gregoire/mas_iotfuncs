@@ -128,7 +128,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         self.renameToDBColumns(df,entity_meta_dict)
 
         # Store the df
-        self.storePreload(db,table,entity_type,entity_meta_dict,df)
+        self.storePreload(db,table,entity_type,entity_meta_dict,df,[self.date_field])
 
         # update sequence number, use global constant
         self.updateLastSeq(db,str(max_timestamp))

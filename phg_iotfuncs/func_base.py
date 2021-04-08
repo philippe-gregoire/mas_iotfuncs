@@ -92,7 +92,7 @@ class PhGCommonPreload(BasePreload):
         logger.info(f"Column map {pprint.pformat(columnMap)}")
         df.rename(columns=columnMap,inplace=True)
 
-    def storePreload(self,db,table,entity_type,entity_meta_dict,df,date_col='date'):
+    def storePreload(self,db,table,entity_type,entity_meta_dict,df,keep_case_columns=[]):
         """
         Store the Preload data, to be used by preload override
         """
@@ -100,12 +100,15 @@ class PhGCommonPreload(BasePreload):
 
         logger.info(f"Incoming df columns={df.columns}")
 
-        # Use lowercased required column names
-        required_cols =[c.lower() if c.lower()!=date_col else c for c in  db.get_column_names(table=table, schema=entity_type._db_schema)]
+        # Extract the columns names rquired in the DB schema
+        db_column_names=db.get_column_names(table=table, schema=entity_type._db_schema)
+
+        # List required column names, based on lowercased names
+        required_cols =[c if c in keep_case_columns else c.lower() for c in  db_column_names]
         logger.info(f"Required db columns={required_cols}")
 
-        # user lowercased names for dataframe too, except for DATE field
-        df.rename(columns={c:c.lower() for c in df.columns if c.lower()!=date_col},inplace=True)
+        # user lowercased names for dataframe too, except for keep_case_columns field
+        df.rename(columns={c:c.lower() for c in df.columns if c not in keep_case_columns},inplace=True)
 
         # drop all columns not in the target
         df.drop(columns=[c for c in df.columns if c not in required_cols],inplace=True)
@@ -129,7 +132,9 @@ class PhGCommonPreload(BasePreload):
                     df[m] = None
 
         # Somehow the date column needs to be uppercased, lets's just make a copy for now...
-        df[date_col.upper()]=df[date_col.lower()]
+        for c in keep_case_columns:
+            pass
+            #df[c.upper()]=df[c.lower()]
 
         logger.info(f"df columns final={[c for c in df.columns]}")
         logger.info(f"Writing df {df.shape} to {table}")

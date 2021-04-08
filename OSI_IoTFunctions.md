@@ -38,7 +38,7 @@ This should be assembled into a `credentials_as_dev.json` file, placed in `scrip
     "_db_schema": "MAS_MAM",
     "db2": {
         "username": "user1017",
-        "password": "f9_ZY6w?H6kR#?m8",
+        "password": "<db2_pw>",
         "databaseName": "BLUDB",
         "security": true,
         "port": 32635,
