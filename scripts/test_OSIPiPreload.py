@@ -30,12 +30,15 @@ def addOSIPiArgs(refPath,credsFile,parser):
     for arg in ['pihost','piport','piuser','pipass']:
         parser.add_argument('-'+arg,required=False,default=creds_pi[arg] if arg in creds_pi else None)
 
+    parser.add_argument('ositype', type=str, help=f"Type of OSI API", choices=['Points','Elements'])
+
     parser.add_argument('-date_field', type=str, help=f"Field containing the event date/timestamp", required=False,default='date')
+
     parser.add_argument('-point_attr_map_file', type=str, help=f"OSIPi Points mapping JSON file name", required=False,default=POINT_ATTR_MAP_FILE)
     parser.add_argument('-name_filter', type=str, help=f"OSIPi Point name filter", required=False,default=f"{POINT_PREFIX}*")
 
-    parser.add_argument('-databasePath', type=str, help=f"Path to the database, e.g \\\\OSISOFT-SERVER\\IBM_FabLab", required=False,default='\\\\OSISOFT-SERVER\\IBM_FabLab')
-    parser.add_argument('-elementName', type=str, help=f"Parent Element name", required=False,default='Motor')
+    parser.add_argument('-database_path', type=str, help=f"OSIPi Path to the Element database, e.g \\\\OSISOFT-SERVER\\IBM_FabLab", required=False,default='\\\\OSISOFT-SERVER\\IBM_FabLab')
+    parser.add_argument('-element_name', type=str, help=f"OSIPi Parent Element name", required=False,default='Motor')
 
 def main(argv):
     '''
@@ -50,17 +53,12 @@ def main(argv):
     sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__),'..')))
 
     parser = argparse.ArgumentParser(description=f"Tester for OSIPI iotfunctions")
+
+    script_utils.add_operations(parser,['osi_dbtest','osi_list'])
+    script_utils.add_common_args(parser,argv)
+
     addOSIPiArgs(argv[0],'credentials_osipi',parser)
 
-    parser.add_argument('operation', type=str, help=f"Operation", choices=['test','register','dbtest','create','constant','k','list'], default='test')
-    parser.add_argument('ositype', type=str, help=f"Type of OSI API", choices=['Points','Elements'])
-    parser.add_argument('-const_name', type=str, help=f"Name of constant", default=None)
-    parser.add_argument('-const_value', type=str, help=f"Value for constant", default=None)
-    parser.add_argument('-entityNamePrefix', type=str, help=f"Value for constant", default=f"test_entity_for_")
-    parser.add_argument('-database_path', type=str, help=f"Value for constant", default=None)
-    parser.add_argument('-element_name', type=str, help=f"Value for constant", default=None)
-
-    script_utils.add_common_args(parser,argv)
     args = parser.parse_args(argv[1:])
 
     # logging.basicConfig(level=args.loglevel)
@@ -85,7 +83,7 @@ def main(argv):
             attributes=list(dict.fromkeys([v[1] for v in POINT_ATTR_MAP.values()]))
             print(f"Creating entity {entityName} with attributes {attributes}")
             script_utils.createEntity(db,db_schema,entityName,attributes)
-        elif args.operation=='list':
+        elif args.operation=='osi_list':
             # List all Points defined in the target OSIPi server
             from phg_iotfuncs.osipiutils import listOSIPiPoints
             listOSIPiPoints(args)
@@ -114,11 +112,11 @@ def main(argv):
             attributes=df.columns
             print(f"Creating entity {entityName} with attributes {attributes}")
             script_utils.createEntity(db,db_schema,entityName,attributes)
-        elif args.operation=='list':
-            # List all Points defined in the target OSIPi server
+        elif args.operation=='osi_list':
+            # List all Elements defined in the target OSIPi server
             from phg_iotfuncs.osipiutils import listOSIPiElements
             listOSIPiElements(args)
-        elif args.operation=='dbtest':
+        elif args.operation=='osi_dbtest':
             import iotfunctions
             from phg_iotfuncs import iotf_utils
 
@@ -139,44 +137,8 @@ def main(argv):
 
             rc=db.write_frame(df=df, table_name=entity_meta_dict['metricsTableName'])
             print(f"Written {len(df)} rows, rc={rc}")
-
-    elif args.operation=='constant':
-        from phg_iotfuncs import iotf_utils
-        pprint.pprint(iotf_utils.getConstant(db, constant_name=None))
-        if args.const_name is not None and args.const_value is not None:
-            iotf_utils.putConstant(db,args.const_name,args.const_value)
-    elif args.operation=='list_k':
-        from phg_iotfuncs import iotf_utils
-        k_name=args.lastseq_constant
-        k_desc='PhG Konst'
-        try:
-            rc=iotf_utils.registerConstant(db,k_name,int,k_desc)
-        except:
-            pass
-        k_val=iotf_utils.getConstant(db,k_name,-1)
-        print(f"Got value {k_val}")
-        rc=iotf_utils.putConstant(db,k_name,k_val+1)
-        k_newval=iotf_utils.getConstant(db,k_name)
-        print(f"Got new value {k_newval}")
-
-    elif args.operation=='k':
-        import iotfunctions.ui
-        constants = [iotfunctions.ui.UISingle(name='phg_const',description='PhG Konst',datatype=int)]
-        payload = []
-        for c in constants:
-            meta = c.to_metadata()
-            name = meta['name']
-            default = meta.get('value', None)
-            del meta['name']
-            try:
-                del meta['value']
-            except KeyError:
-                pass
-            payload.append({'name': name, 'entityType': None, 'enabled': True, 'value': default, 'metadata': meta})
-        pprint.pprint(payload)
-        rc=db.http_request(object_type='defaultConstants', object_name=None, request="POST", payload=payload,
-                          raise_error=True)
-        pprint(rc)
+    else:
+        script_utils.common_operation(args,db,db_schema)
 
 def test(db,db_schema,iot_func,osipi_host, osipi_port,
             osipi_user, osipi_pass, 

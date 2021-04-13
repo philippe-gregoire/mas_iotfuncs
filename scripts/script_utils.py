@@ -14,15 +14,64 @@
 # Author: Philippe Gregoire - IBM in France
 # *****************************************************************************
 
-import sys,os, json
+import sys, os, io, json
 
-import logging
+import logging, pprint
 logger = logging.getLogger(__name__)
 
 import sqlalchemy
 
 # Built-In Functions
 # from iotfunctions import bif
+
+def add_operations(parser,operations):
+    parser.add_argument('operation', type=str, help=f"Operation", choices=operations+['test','info','register','create','list_constants','set_constant'], default='info')
+
+def common_operation(args,db,db_schema):
+    if args.operation=='info':
+        # Gather information on the Monitor instance through its API
+        pass
+    elif args.operation=='list_constants':
+        from phg_iotfuncs import iotf_utils
+
+        # get a list of all constants
+        print(f"Getting a list of constants")
+        pprint.pprint(iotf_utils.getConstant(db, constant_name=None))
+
+    elif args.operation=='set_constant':
+        # Put a constant
+        from phg_iotfuncs import iotf_utils
+        k_name=args.lastseq_constant
+        k_desc='PhG Konst'
+        try:
+            rc=iotf_utils.registerConstant(db,k_name,int,k_desc)
+        except:
+            pass
+        k_val=iotf_utils.getConstant(db,k_name,-1)
+        print(f"Got value {k_val}")
+        rc=iotf_utils.putConstant(db,k_name,k_val+1)
+        k_newval=iotf_utils.getConstant(db,k_name)
+        print(f"Got new value {k_newval}")
+
+    elif args.operation=='constant_test':
+        # constant API test
+        import iotfunctions.ui
+        constants = [iotfunctions.ui.UISingle(name='phg_const',description='PhG Konst',datatype=int)]
+        payload = []
+        for c in constants:
+            meta = c.to_metadata()
+            name = meta['name']
+            default = meta.get('value', None)
+            del meta['name']
+            try:
+                del meta['value']
+            except KeyError:
+                pass
+            payload.append({'name': name, 'entityType': None, 'enabled': True, 'value': default, 'metadata': meta})
+        pprint.pprint(payload)
+        rc=db.http_request(object_type='defaultConstants', object_name=None, request="POST", payload=payload,
+                          raise_error=True)
+        pprint.pprint(rc)
 
 def add_common_args(parser,argv):
     ''' Add creds_file and loglevel args '''
@@ -36,7 +85,10 @@ def add_common_args(parser,argv):
     parser.add_argument('-loglevel', type=type_log_level, help=f"Log Level, one of {logging._nameToLevel.keys()}", choices=logging._nameToLevel.keys(), default='info')
     parser.add_argument('-echo_sql', help=f"Set to trace SQL", action='store_true')
 
-    import os
+    parser.add_argument('-const_name', type=str, help=f"Name of constant", default=None)
+    parser.add_argument('-const_value', type=str, help=f"Value of constant", default=None)
+    parser.add_argument('-entityNamePrefix', type=str, help=f"Prefix for Monitor test entity name", default=f"test_entity_for_")
+
     if not os.path.exists(defCredsFile):
         print(f"WARNING: default credentials file {defCredsFile} does not exist, copy and edit credentials_as.json")
 
@@ -100,11 +152,11 @@ def setup_iotfunc(credsFileName,echoSQL=False,loglevel=logging.INFO):
     if 'db2' in credentials:
         if 'DB_CERTIFICATE_FILE' not in os.environ:
     # Set the DB2 certificate in environment var DB_CERTIFICATE_FILE
-            import os,ssl,io
+            import ssl
             db2Host=credentials['db2']['host']
             db2Port=credentials['db2']['port']
 
-            certFile=os.path.join(os.path.dirname(__file__),f"DB2_cert_{db2Port}.pem")
+            certFile=os.path.abspath(os.path.join(os.path.dirname(__file__),f"DB2_cert_{db2Port}.pem"))
             if os.path.exists(certFile):
                 print(f"Setting DB2 SSL server certificate file to {certFile}")
                 os.environ['DB_CERTIFICATE_FILE']=certFile
@@ -117,18 +169,44 @@ def setup_iotfunc(credsFileName,echoSQL=False,loglevel=logging.INFO):
 
     return db,db_schema
 
-def dumpCertificate(host,port,refPath,certType):
-    import ssl,io
+def getCertificateChain(host,port):
+    import socket,OpenSSL
 
-    print(f"Getting SSL server certificate for {host}:{port}")
-    cert=ssl.get_server_certificate((host,port))
+    sock = OpenSSL.SSL.Connection(context=OpenSSL.SSL.Context(method=OpenSSL.SSL.TLSv1_2_METHOD), socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+    try:
+        sock.settimeout(5)
+        sock.connect((host, port))
+        sock.setblocking(1)
+        sock.do_handshake()
+        return sock.get_peer_cert_chain()
+    finally:
+        sock.shutdown()
+        sock.close()
 
-    certFile=os.path.join(os.path.dirname(refPath),f"{certType}_cert_{port}.pem")
-    with io.open(certFile,'w') as f:
-        print(f"Writing {certType} certificate to {certFile}")
-        f.write(cert)
-    
-    return cert,certFile
+def dumpSelfSignedCertificate(host,port,hostType,refPath=None,_logger=print):
+    ''' Dump the self-signed certificate which is norally at the root of the chain 
+        If refPath is not None, write the certificate PEM file in the directory
+    '''
+    import io,OpenSSL
+
+    _logger(f"Getting certificate chain for {host}:{port}")
+    chain=getCertificateChain(host,port)
+
+    for cert in chain:
+        if cert.get_issuer()==cert.get_subject():
+            # Self-signed
+            _logger(f"Found self-signed certificate for {cert.get_subject()}")
+            certPEM=OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM,cert)
+
+            certFile=os.path.abspath(os.path.join(os.path.dirname(refPath),f"{hostType}_cert_{port}.pem")) if refPath else None
+            if certFile:
+                with io.open(certFile,'wb') as f:
+                    _logger(f"Writing {hostType} self-signed certificate to {certFile}")
+                    f.write(certPEM)
+
+            return cert,certFile
+    # Not found
+    return None,None
 
 def inferTypesFromCSV(csv_file):
     '''
@@ -177,7 +255,7 @@ def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),
                         db,
                         *columns,
                         **{
-                          '_timestamp' : 'date',
+                          '_timestamp' : date_column,
                           '_db_schema' : db_schema
                           }
                         )

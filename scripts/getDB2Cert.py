@@ -15,7 +15,8 @@
 # *****************************************************************************
 
 import script_utils
-import ssl, io, os
+
+
 
 # Load Db2 credentials from config
 creds=script_utils.load_creds_file(__file__,'credentials_as')
@@ -25,6 +26,4 @@ db2Host=creds['db2']['host']
 db2Port=creds['db2']['port']
 
 # Write certificate to .pem file
-cert,certFile=script_utils.dumpCertificate(db2Host,db2Port,__file__,'DB2')
-
-print(cert)
+cert,certFile=script_utils.dumpSelfSignedCertificate(db2Host,db2Port,'DB2',__file__)

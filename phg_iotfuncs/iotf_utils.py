@@ -45,7 +45,7 @@ def getConstant(entity_type_or_db,constant_name,default_value=None,auto_register
         entity_name=None
     else:
         db=entity_type_or_db.db
-        entity_name=entity_type.logical_name
+        entity_name=entity_type_or_db.logical_name
 
     constants=json.loads(db.http_request(constantType(entity_name), entity_name, 'GET',raise_error=True))
     logger.debug(f"{constantType(entity_name)} GET result: {pprint.pformat(constants)}")
