@@ -28,19 +28,18 @@ def add_operations(parser,operations):
     parser.add_argument('operation', type=str, help=f"Operation", choices=operations+['test','info','register','create','list_constants','set_constant'], default='info')
 
 def common_operation(args,db,db_schema):
+    from phg_iotfuncs import iotf_utils
+    
     if args.operation=='info':
         # Gather information on the Monitor instance through its API
         pass
     elif args.operation=='list_constants':
-        from phg_iotfuncs import iotf_utils
 
         # get a list of all constants
         print(f"Getting a list of constants")
         pprint.pprint(iotf_utils.getConstant(db, constant_name=None))
-
     elif args.operation=='set_constant':
         # Put a constant
-        from phg_iotfuncs import iotf_utils
         k_name=args.lastseq_constant
         k_desc='PhG Konst'
         try:
@@ -238,7 +237,7 @@ def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),
     logger.info(f"Creating Entity {entity_name} for {len(columns)} columns")
 
     import iotfunctions.metadata
-    import iotf_utils
+    from phg_iotfuncs import iotf_utils
 
     # Align Columns which are not sqlalchemy yet
     columns=[c if isinstance(c,sqlalchemy.Column) else sqlalchemy.Column(iotf_utils.toMonitorColumnName(str(c)),sqlalchemy.TIMESTAMP() if c==date_column else columnType) for c in columns]
@@ -281,7 +280,7 @@ def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),
         rc=entity.register(raise_error=True,publish_kpis=False)
         if len(rc)>0:
             logger.info(f"Entity registration rc:")
-            pprint(json.loads(rc))
+            pprint(rc)
     except HTTPError as httpErr:
         logger.error(f"Entity registration rc: {httpErr}")      
 

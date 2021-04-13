@@ -194,8 +194,9 @@ def getParentElements(piSrvParams,databasePath,elementName):
     # Get the named Element, parent of sensors
     r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Links.Elements&nameFilter={elementName}")
 
-    # We get the parent element, now list the sensors within
-    r_elements=getFromPi(piSrvParams,f"{r_elements['Items'][0]['Links']['Elements']}?selectedFields=Items.Name;Items.PointType,Items.Links.RecordedData")
+    # We get the parent element, now list the children Elements (sensors) within
+    #r_elements=getFromPi(piSrvParams,r_elements['Items'][0]['Links']['Elements'])
+    r_elements=getFromPi(piSrvParams,f"{r_elements['Items'][0]['Links']['Elements']}?selectedFields=Items.Name;Items.Links.RecordedData")
     plog(r_elements)
 
     return r_elements
@@ -207,11 +208,12 @@ def getOSIPiElements(piSrvParams, databasePath,elementName,valueFields,deviceAtt
     sensorValues={}
     for sensor in r_elements['Items']:
         deviceId=sensor['Name']
+        #r_data=getFromPi(piSrvParams,sensor['Links']['RecordedData'])
         r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}")
         plog(r_data)
         for d in r_data['Items']:
             attr_name=d['Name']
-            attr_type=d['PointType']
+            #attr_type=d['PointType']
             for item in d['Items']:
                 ts=item[ATTR_FIELD_TS]
                 if (ts,deviceId) not in sensorValues:
