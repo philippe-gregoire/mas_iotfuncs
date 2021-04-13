@@ -29,9 +29,7 @@
             "program": "scripts/test_OSIPiPreload.py",
             "args": ["register","Elements"],
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"},
-            "preLaunchTask": "cls"
+            "justMyCode": false
         },
         {
             "name": "Python : register OSIPI Points function",
@@ -40,9 +38,7 @@
             "program": "scripts/test_OSIPiPreload.py",
             "args": ["register","Points"],
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"},
-            "preLaunchTask": "cls"
+            "justMyCode": false
         },
         {
             "name": "Python : test OSIPI Elements",
@@ -51,9 +47,7 @@
             "program": "scripts/test_OSIPiPreload.py",
             "args": ["test","Elements"],
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"},
-            "preLaunchTask": "cls"
+            "justMyCode": false
         },
         {
             "name": "Python : test OSIPI Points",
@@ -62,9 +56,7 @@
             "program": "scripts/test_OSIPiPreload.py",
             "args": ["test","Points"],
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"},
-            "preLaunchTask": "cls"
+            "justMyCode": false
         },
         {
             "name": "Python : create Entity OSIPI Elements",
@@ -73,8 +65,7 @@
             "program": "scripts/test_OSIPiPreload.py",
             "args": ["create","Elements","-database_path","\\\\OSISOFT-SERVER\\IBM_FabLab","-element_name","Motor"],
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"}
+            "justMyCode": false
         },
         {
             "name": "Python : create Entity OSIPI Points",
@@ -83,8 +74,7 @@
             "program": "scripts/test_OSIPiPreload.py",
             "args": ["create","Points"],
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"}
+            "justMyCode": false
         },
         {
             "name": "Python : list Entity OSIPI Elements",
@@ -93,8 +83,7 @@
             "program": "scripts/test_OSIPiPreload.py",
             "args": ["list","Elements","-database_path","\\\\OSISOFT-SERVER\\IBM_FabLab","-element_name","Motor"],
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"}
+            "justMyCode": false
         },
         {
             "name": "Python : list Entity OSIPI Points",
@@ -103,8 +92,7 @@
             "program": "scripts/test_OSIPiPreload.py",
             "args": ["list","Points"],
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"}
+            "justMyCode": false
         },
         {
             "name": "Python : dbtest Entity OSIPI Elements",
@@ -113,8 +101,7 @@
             "program": "scripts/test_OSIPiPreload.py",
             "args": ["dbtest","Elements","-database_path","\\\\OSISOFT-SERVER\\IBM_FabLab","-element_name","Motor"],
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {"DB_CERTIFICATE_FILE":"rootCA_32635.pem"}
+            "justMyCode": false
         },
         {
             "name": "Python : Current file",

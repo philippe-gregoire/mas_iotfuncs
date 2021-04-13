@@ -96,10 +96,39 @@ def setup_iotfunc(credsFileName,echoSQL=False,loglevel=logging.INFO):
     db_schema = None
     if 'postgresql' in credentials:
         credentials['postgresql']['databaseName']=credentials['postgresql']['db']
-    # db = iotfunctions.db.Database(credentials=credentials,echo=loglevel==logging.DEBUG)
+
+    if 'db2' in credentials:
+        if 'DB_CERTIFICATE_FILE' not in os.environ:
+    # Set the DB2 certificate in environment var DB_CERTIFICATE_FILE
+            import os,ssl,io
+            db2Host=credentials['db2']['host']
+            db2Port=credentials['db2']['port']
+
+            certFile=os.path.join(os.path.dirname(__file__),f"DB2_cert_{db2Port}.pem")
+            if os.path.exists(certFile):
+                print(f"Setting DB2 SSL server certificate file to {certFile}")
+                os.environ['DB_CERTIFICATE_FILE']=certFile
+            else:
+                print("DB2 certificate file {certFile} not present")
+        else:
+            print(f"Using {os.environ['DB_CERTIFICATE_FILE']} certificate file for DB2")
+
     db = iotfunctions.db.Database(credentials=credentials,echo=echoSQL)
 
     return db,db_schema
+
+def dumpCertificate(host,port,refPath,certType):
+    import ssl,io
+
+    print(f"Getting SSL server certificate for {host}:{port}")
+    cert=ssl.get_server_certificate((host,port))
+
+    certFile=os.path.join(os.path.dirname(refPath),f"{certType}_cert_{port}.pem")
+    with io.open(certFile,'w') as f:
+        print(f"Writing {certType} certificate to {certFile}")
+        f.write(cert)
+    
+    return cert,certFile
 
 def inferTypesFromCSV(csv_file):
     '''
