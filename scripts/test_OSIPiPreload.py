@@ -80,10 +80,10 @@ def main(argv):
         elif args.operation=='register':
             script_utils.registerFunction(db,db_schema,TargetFunc)
         elif args.operation=='create':
-            from phg_iotfuncs.func_osipi import POINT_ATTR_MAP
-            attributes=list(dict.fromkeys([v[1] for v in POINT_ATTR_MAP.values()]))
-            print(f"Creating entity {entityName} with attributes {attributes}")
-            script_utils.createEntity(db,db_schema,entityName,attributes)
+            point_attr_map=script_utils.loadJSON(args.point_attr_map_file)
+            attributes=list(dict.fromkeys([v[1] for v in point_attr_map.values()]))
+            print(f"Creating entity {entityName} with attributes {attributes} specified in {args.point_attr_map_file}")
+            script_utils.createEntity(db,db_schema,entityName,attributes,function=TargetFunc)
         elif args.operation=='osi_list':
             # List all Points defined in the target OSIPi server
             from phg_iotfuncs.osipiutils import listOSIPiPoints
@@ -112,7 +112,7 @@ def main(argv):
             df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
             attributes=df.columns
             print(f"Creating entity {entityName} with attributes {attributes}")
-            script_utils.createEntity(db,db_schema,entityName,attributes)
+            script_utils.createEntity(db,db_schema,entityName,attributes,function=TargetFunc)
         elif args.operation=='osi_list':
             # List all Elements defined in the target OSIPi server
             from phg_iotfuncs.osipiutils import listOSIPiElements

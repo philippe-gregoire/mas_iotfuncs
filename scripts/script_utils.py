@@ -231,7 +231,7 @@ def inferTypesFromCSV(csv_file):
         logger.info(f"All columns have been mapped from {csv_file}: {csv_columns}")
     return csv_columns
 
-def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),date_column='date'):
+def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),date_column='date',function=None):
     '''
     Create an Entity by name and columns
     columns is expected to be an array of sqlalchemy.Column objects. if they are strings, they will be converted to Columns
@@ -249,17 +249,33 @@ def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),
     You can create entity types through the IoT Platform or using the python API as shown below.
     The database schema is only needed if you are not using the default schema. You can also rename the timestamp.
     '''
-    logger.info(f"Dropping Entity table for {entity_name}")
-    db.drop_table(entity_name, schema = db_schema)
 
-    entity = iotfunctions.metadata.EntityType(entity_name,
-                        db,
-                        *columns,
-                        **{
-                          '_timestamp' : date_column,
-                          '_db_schema' : db_schema
-                          }
-                        )
+    if function:
+        entity = iotfunctions.metadata.BaseCustomEntityType(
+                    entity_name,
+                    db,
+                    columns=columns,
+                    drop_existing=True,
+                    db_schema=db_schema,
+                    functions=[function],
+                    **{
+                        '_timestamp' : date_column,
+                        '_db_schema' : db_schema
+                    }
+                )
+    else:
+        logger.info(f"Dropping Entity table for {entity_name}")
+        db.drop_table(entity_name, schema = db_schema)
+
+        entity = iotfunctions.metadata.EntityType(
+                    entity_name,
+                    db,
+                    *columns,
+                    **{
+                        '_timestamp' : date_column,
+                        '_db_schema' : db_schema
+                    }
+                )
     # entity = iotfunctions.metadata.BaseCustomEntityType(name=entity_name,db=db,
                         # columns=csv_columns,
                         # constants=,
@@ -279,7 +295,7 @@ def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),
     from urllib3.exceptions import HTTPError
     try:
         logger.info(f"Registering Entity {entity}")
-        rc=entity.register(raise_error=True,publish_kpis=False)
+        rc=entity.register(raise_error=True,publish_kpis=function is not None)
         if len(rc)>0:
             logger.info(f"Entity registration rc:")
             pprint(rc)
@@ -295,3 +311,9 @@ def registerFunction(db,db_schema,iot_func):
         db.unregister_functions(iot_func.__name__)
         rc=db.register_functions([iot_func],raise_error=False)
     logger.info(f"register rc={rc}")
+
+def loadJSON(json_file):
+    ''' Load a local JSON file into a dict '''
+    import io,os,json
+    with io.open(os.path.join(os.path.dirname(__file__),json_file)) as f:
+        return json.load(f)
