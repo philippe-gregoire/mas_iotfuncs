@@ -97,7 +97,7 @@ def main(argv):
             test(db,db_schema,TargetFunc,
                     args.pihost, args.piport,
                     args.piuser,args.pipass,
-                    args.database_path,args.element_name,
+                    args.parent_element_path,
                     args.date_field)
         elif args.operation=='register':
             script_utils.registerFunction(db,db_schema,TargetFunc)
@@ -128,7 +128,7 @@ def main(argv):
             from phg_iotfuncs.func_osipi import DEVICE_ATTR
 
             # Fetch the Elements from OSIPi Server.
-            elemVals=getOSIPiElements(args,args.database_path,args.element_name,ATTR_FIELDS,DEVICE_ATTR)
+            elemVals=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
 
             # Get into DataFrame table form indexed by timestamp 
             df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)

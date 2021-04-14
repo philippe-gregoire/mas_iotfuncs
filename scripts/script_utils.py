@@ -159,7 +159,7 @@ def setup_iotfunc(credsFileName,echoSQL=False,loglevel=logging.INFO):
 
             certFile=os.path.abspath(os.path.join(os.path.dirname(__file__),f"DB2_cert_{db2Port}.pem"))
             if os.path.exists(certFile):
-                print(f"Setting DB2 SSL server certificate file to {certFile}")
+                print(f"Setting DB2 SSL server certificate file for {db2Host}:{db2Port} to {certFile}")
                 os.environ['DB_CERTIFICATE_FILE']=certFile
             else:
                 print("DB2 certificate file {certFile} not present")

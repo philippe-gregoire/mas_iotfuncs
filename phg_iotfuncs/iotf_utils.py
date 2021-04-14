@@ -78,7 +78,7 @@ def putConstant(entity_type_or_db,constant_name,new_value):
         entity_name=None
     else:
         db=entity_type_or_db.db
-        entity_name=entity_type.logical_name
+        entity_name=entity_type_or_db.logical_name
 
     payload={"enabled": True,
              "name": constant_name,
