@@ -9,13 +9,15 @@
 # *****************************************************************************
 # Maximo Application Suite Analytics Service examples
 #
-# OSIPi API utilities to get sensor Point values
+# OSIPi API utilities to get Elements and Point values
 #
 # Author: Philippe Gregoire - IBM in France
 # *****************************************************************************
 import sys,logging
 
 logger = logging.getLogger(__name__)
+
+import iotf_utils
 
 # Mapping of OSIPi Types to Python types
 OSIPI_TYPES_MAP={
@@ -24,6 +26,7 @@ OSIPI_TYPES_MAP={
     'Float64': float,
     'Digital': bool,
     'Int32': int,
+    'Single': float
 }
 
 # Name of the field holding an attribute's timestamp
@@ -244,6 +247,9 @@ def convertToEntities(flattened,entity_date_field,deviceAttr):
 
     # Find the date column. We know at this stage that the records we keep have a date_field
     df[ATTR_FIELD_TS]=pd.to_datetime(df[ATTR_FIELD_TS],errors='coerce')
+
+    # Adjust device_id to remove special chars
+    df[deviceAttr]=df[deviceAttr].apply(iotf_utils.toMonitorColumnName)
 
     # Adjust columns, add index columns deviceid, rcv_timestamp_utc
     id_index_col=deviceAttr
