@@ -57,3 +57,51 @@ This is not required for this installation, but for reference, the Connect (IoT 
 
 ## Creating a Maximo Monitor Entity as a twin of a OSIPi Element
 This section assumes that you have gathered the connectivity parameters in the two `credentials_as_%USERNAME%.json`and `credentials_osipi_%USERNAME%.json` files.
+
+### Selecting the parent Element from OSIPi
+We assume that the Entity type we want to create from Elements has several instances as children Element nodes, with the same attributes structure.
+#### Finding the path to the parent Element
+You can use the `scripts/TestOSIPIAPI.py list -elements -pathprefix "\\path\" -attributes` to find out the parent path, below which instances of the Entity will be present.
+
+For example `scripts\TestOSIPIAPI.py list -elements -pathprefix "\\OSISOFT-SERVER\IBM_FabLab\FabLab_Paris\Motor" -attributes` could show 3 `Bearings` instances below. The last part of the path after the parent will be used as the instance ID.
+
+One you have identified your parent Element, you can use the following command to show the attribute structure and optionally dump the values to a CSV file:
+```
+scripts\TestOSIPIAPI.py test -elements -parent_element "\\OSISOFT-SERVER\IBM_FabLab\FabLab_Paris\Motor" -to_csv
+```
+
+### Creating the OSIPi Element twin Entity in Maximo Monitor
+We will use the information gathered above to create a matching Entity Type in Monitor.
+
+This time, we will use the following command:
+```
+scripts\test_OSIPiPreload.py create -elements -parent_element "\\OSISOFT-SERVER\IBM_FabLab\FabLab_Paris\Motor" -entity_type Bearing
+```
+After which you will have a new Entity Type defined in Maximo Monitor:
+![](install.assets/install-3c32aa47.png)
+
+### Adding OSIPi Element as a Preload data source for the Entity
+We will register an IoTFunction in Maximo Monitor, which will be used to preload (i.e. load at the beginning of the Analytics Service pipeline) data from OSIPi into Entities
+
+#### Register OSIPi Elements Preload functions
+The function is called `PhGOSIElemsPreload`, to register it with your Maximo Monitor instance, use the following command:
+```
+scripts\test_OSIPiPreload.py register -elements
+```
+This is a one-time setup operation
+
+#### Configure the PhGOSIElemsPreload for the entity_type
+1. From Maximo Monitor dashboard, select the Monitor tab button ![](install.assets/install-3b40e66c.png)
+1. Open your target Entity Type ![](install.assets/install-4982f335.png)
+1. Switch to the `Data` tab ![](install.assets/install-5e4c47b2.png)
+1. Click the *Create New* `[+]` button ![](install.assets/install-21ffb060.png)
+1. Type a filter in the search field, e.g. `PhG` ![](install.assets/install-fd98f554.png)
+1. Select the `PhGOSIElemsPreload` function ![](install.assets/install-b56592b0.png)
+1. Enter the connectivity information:
+   * `date_field` should be set to `date`
+   * `osipi_host`, `ospi_port`, `osipi_user` and `osipi_pass` copied from `credentials_osipi` file.
+   * `parent_element_path` should be the same as the one tested previously
+   ![](install.assets/install-3a6243fd.png)
+1. Click `[Next]`, accept the defaults and finally click `[Create]` ![](install.assets/install-735cdf40.png)
+
+The function will kick-off every 5 minutes as part of the Analytics Service pipeline processing, and will start to populate sensor data for the children Elements of the specified `parent_element_path`
