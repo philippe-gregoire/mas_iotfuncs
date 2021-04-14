@@ -4,7 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
+    
         {
             "name": "Python : Monitor info",
             "type": "python",
@@ -24,6 +24,15 @@
             "justMyCode": false
         },
         {
+            "name": "Python : OSIPIAPI Test Elements",
+            "type": "python",
+            "request": "launch",
+            "program": "scripts/TestOSIPIAPI.py",
+            "args": ["test","-elements", "-parent_element", "\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor"],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Python : OSIPIAPI List Points",
             "type": "python",
             "request": "launch",
@@ -32,6 +41,25 @@
             "console": "integratedTerminal",
             "justMyCode": false
         },
+        {
+            "name": "Python : create Entity OSIPI Elements",
+            "type": "python",
+            "request": "launch",
+            "program": "scripts/test_OSIPiPreload.py",
+            "args": ["create","-elements","-parent_element","\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor"],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Python : create Entity OSIPI Points",
+            "type": "python",
+            "request": "launch",
+            "program": "scripts/test_OSIPiPreload.py",
+            "args": ["create","Points"],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+
         {
             "name": "Python : register OSIPI Elements function",
             "type": "python",
@@ -65,24 +93,6 @@
             "request": "launch",
             "program": "scripts/test_OSIPiPreload.py",
             "args": ["test","Points"],
-            "console": "integratedTerminal",
-            "justMyCode": false
-        },
-        {
-            "name": "Python : create Entity OSIPI Elements",
-            "type": "python",
-            "request": "launch",
-            "program": "scripts/test_OSIPiPreload.py",
-            "args": ["create","Elements","-database_path","\\\\OSISOFT-SERVER\\IBM_FabLab","-element_name","Motor"],
-            "console": "integratedTerminal",
-            "justMyCode": false
-        },
-        {
-            "name": "Python : create Entity OSIPI Points",
-            "type": "python",
-            "request": "launch",
-            "program": "scripts/test_OSIPiPreload.py",
-            "args": ["create","Points"],
             "console": "integratedTerminal",
             "justMyCode": false
         },

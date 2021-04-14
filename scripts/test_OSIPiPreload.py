@@ -33,13 +33,13 @@ def addOSIPiArgs(refPath,credsFile,parser):
     for arg in ['pihost','piport','piuser','pipass']:
         parser.add_argument('-'+arg,required=False,default=creds_pi[arg] if arg in creds_pi else None)
 
+    parser.add_argument('-entity_type', type=str, help=f"Entity type name", required=False,default=None)
     parser.add_argument('-date_field', type=str, help=f"Field containing the event date/timestamp", required=False,default='date')
 
     parser.add_argument('-point_attr_map_file', type=str, help=f"OSIPi Points mapping JSON file name", required=False,default=POINT_ATTR_MAP_FILE)
-    parser.add_argument('-name_filter', type=str, help=f"OSIPi Point name filter", required=False,default=f"{POINT_PREFIX}*")
+    parser.add_argument('-points_name_prefix', type=str, help=f"OSIPi Points name prefix", required=False,default=f"{POINT_PREFIX}*")
 
-    parser.add_argument('-database_path', type=str, help=f"OSIPi Path to the Element database, e.g \\\\OSISOFT-SERVER\\IBM_FabLab", required=False,default='\\\\OSISOFT-SERVER\\IBM_FabLab')
-    parser.add_argument('-element_name', type=str, help=f"OSIPi Parent Element name", required=False,default='Motor')
+    parser.add_argument('-parent_element_path', type=str, help=f"OSIPi Parent Element name", required=False,default='\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor')
 
 def main(argv):
     '''
@@ -69,9 +69,9 @@ def main(argv):
     # pprint.pprint(db.credentials)
     import os
 
-    if args.ositype=='Points':
+    if args.points:
         from phg_iotfuncs.func_osipi import PhGOSIPIPointsPreload as TargetFunc
-        entityName=args.entityNamePrefix+TargetFunc.__name__
+        entityName=args.entity_type if args.entity_type else args.entityNamePrefix+TargetFunc.__name__
         if args.operation=='test':
             test(db,db_schema,TargetFunc,
                     args.pihost, args.piport,
@@ -89,9 +89,9 @@ def main(argv):
             from phg_iotfuncs.osipiutils import listOSIPiPoints
             listOSIPiPoints(args)
 
-    elif args.ositype=='Elements':
+    elif args.elements:
         from phg_iotfuncs.func_osipi import PhGOSIElemsPreload as TargetFunc
-        entityName=args.entityNamePrefix+TargetFunc.__name__
+        entityName=args.entity_type if args.entity_type else args.entityNamePrefix+TargetFunc.__name__
         if args.operation=='test':
             test(db,db_schema,TargetFunc,
                     args.pihost, args.piport,
@@ -106,7 +106,7 @@ def main(argv):
             from phg_iotfuncs.func_osipi import DEVICE_ATTR
 
             # Fetch the Elements from OSIPi Server.
-            elemVals=getOSIPiElements(args,args.database_path,args.element_name,ATTR_FIELDS,DEVICE_ATTR)
+            elemVals=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
 
             # Get into DataFrame table form indexed by timestamp 
             df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)

@@ -166,7 +166,7 @@ def listOSIPiElements(piSrvParams,dump_attributes=True,path_prefix=None,_log=pri
                     for attr in r_attributes['Items']:
                         _log(f"\t{attr['Name']}\ttype={attr['Type']}\tZero={attr['Zero']}\tSpan={attr['Span']}" )
 
-def getParentElements(piSrvParams,databasePath,elementName):
+def getParentElements(piSrvParams,parentElementPath):
     ''' Get Element values from OSIPi API server
         Navigation path from API Root:
         - Asset server (https://192.168.63.39/PIWebAPI/assetservers)
@@ -185,7 +185,7 @@ def getParentElements(piSrvParams,databasePath,elementName):
     elements=None
     for database in r_databases['Items']:
         logger.info(f"path={database['Path']}")
-        if databasePath.startswith(database['Path']):
+        if parentElementPath.startswith(database['Path']):
             # This is the DB for our element
             elements=database['Links']['Elements']
             break
@@ -196,17 +196,22 @@ def getParentElements(piSrvParams,databasePath,elementName):
         return None
 
     # Get the named Element, parent of sensors
-    r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Links.Elements&nameFilter={elementName}")
+    parentElementName=parentElementPath.split('\\')[-1]
+    r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Links.Elements;Items.Path&nameFilter={parentElementName}")
 
     # We get the parent element, now list the children Elements (sensors) within
     #r_elements=getFromPi(piSrvParams,r_elements['Items'][0]['Links']['Elements'])
-    r_elements=getFromPi(piSrvParams,f"{r_elements['Items'][0]['Links']['Elements']}?selectedFields=Items.Name;Items.Links.RecordedData")
-    plog(r_elements)
+    for element in r_elements['Items']:
+        if element['Path']==parentElementPath:
+            r_elements=getFromPi(piSrvParams,f"{element['Links']['Elements']}?selectedFields=Items.Name;Items.Links.RecordedData")
+            plog(r_elements)
 
-    return r_elements
+            return r_elements
+    
+    return None
 
-def getOSIPiElements(piSrvParams, databasePath,elementName,valueFields,deviceAttr):
-    r_elements=getParentElements(piSrvParams, databasePath,elementName)
+def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr):
+    r_elements=getParentElements(piSrvParams, parentElementPath)
 
     # We want to generate a dict indexed by (ts,deviceId)
     sensorValues={}

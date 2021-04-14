@@ -42,11 +42,12 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
     Do an OSI Pi Server read as a preload activity. Load results into the Entity Type time series table.
     """
 
-    def __init__(self, osipi_host, osipi_port, osipi_user, osipi_pass, 
-                 database_path, element_name,
+    def __init__(self,
+                 osipi_host, osipi_port, osipi_user, osipi_pass, 
                  date_field,
+                 parent_element_path,
                  osipi_elements_preload_ok):
-        super().__init__(osipi_elements_preload_ok,f"osipi_lastseq_{element_name.lower()}",str)
+        super().__init__(osipi_elements_preload_ok,'osipi_lastseq_'+parent_element_path.split('\\')[-1].lower(),str)
 
         import argparse
 
@@ -55,12 +56,12 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         self.osipi_port = osipi_port
         self.osipi_user = osipi_user
         self.osipi_pass = osipi_pass
-        self.srvParams=argparse.Namespace(pihost=osipi_host,piport=osipi_port,piuser=osipi_user,pipass=osipi_pass)
-        self.database_path = database_path
-        self.element_name = element_name
+        self.parent_element_path = parent_element_path
         self.date_field=date_field.strip()
 
         self.osipi_elements_preload_ok=osipi_elements_preload_ok
+
+        self.srvParams=argparse.Namespace(pihost=osipi_host,piport=osipi_port,piuser=osipi_user,pipass=osipi_pass)
 
     @classmethod
     def build_ui(cls):
@@ -75,10 +76,8 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
             ui.UISingle(required=True, datatype=int, name='osipi_port', description='OSIPi server host port'),
             ui.UISingle(required=True, datatype=str, name='osipi_user', description='OSIPi server userid'),
             ui.UISingle(required=True, datatype=str, name='osipi_pass', description='OSIPi server password'),
-            ui.UISingle(required=True, datatype=str, name='database_path', description='OSIPi Element database Path'),
-            ui.UISingle(required=True, datatype=str, name='element_name', description='OSIPi Parent Element Name'),
             ui.UISingle(required=True, datatype=str, name='date_field', description='Field in the incoming JSON for event date (timestamp)', default='date'),
-            # ui.UISingle(required=True, datatype=str, name='required_fields', description='Fields in the incoming JSON that are required for the payload to be retained'),
+            ui.UISingle(required=True, datatype=str, name='parent_element_path', description='OSIPi Parent Element Path')
         ]
 
         # define arguments that behave as function outputs
@@ -109,7 +108,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
     
         # Get the specified Points attributes fields from OSIServer
-        elemVals=getOSIPiElements(self.srvParams,self.database_path,self.element_name,ATTR_FIELDS,DEVICE_ATTR)
+        elemVals=getOSIPiElements(self.srvParams,self.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
 
         # If no records, return immediately
         if len(elemVals)==0:

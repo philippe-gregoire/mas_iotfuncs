@@ -46,7 +46,7 @@ def testElementsAPI(args):
     from phg_iotfuncs.func_osipi import DEVICE_ATTR
 
      # Fetch the Elements from OSIPi Server.
-    elemVals=getOSIPiElements(args,args.database_path,args.element_name,ATTR_FIELDS,DEVICE_ATTR)
+    elemVals=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
 
     # Get into DataFrame table form indexed by timestamp 
     df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
@@ -72,7 +72,7 @@ def main(argv):
 
     parser.add_argument('operation',help=f"Operation to perform",choices=['list','test'])
     parser.add_argument('-attributes',help='Dump attributes',action='store_true')
-    parser.add_argument('-dataframe',help='Dump dataframe to file',action='store_true')
+    parser.add_argument('-to_csv',help='Dump dataframe to CSV file',action='store_true')
     parser.add_argument('-pathprefix',help='List Elements with this prefix only',default=None)
 
     addOSIPiArgs(argv[0],'credentials_osipi',parser)
@@ -97,7 +97,7 @@ def main(argv):
         else:
             print(f"No test specified, use one of -points or -elements")
 
-        if args.dataframe and df is not None:
+        if args.to_csvscr and df is not None:
             csvFile=f"TESTOSIPI_{'Points' if args.points else 'Elements'}.csv"
             logger.info(f"Writing dataframe to {csvFile}")
             df.to_csv(csvFile)

@@ -146,7 +146,7 @@ def setup_iotfunc(credsFileName,echoSQL=False,loglevel=logging.INFO):
     logger.info(f"Loading Analytics Service credentials from {credsFileName}")
     with open(credsFileName, encoding='utf-8') as credsFile:
         credentials = json.loads(credsFile.read())
-    db_schema = None
+    db_schema = credentials['_db_schema']
     if 'postgresql' in credentials:
         credentials['postgresql']['databaseName']=credentials['postgresql']['db']
 
