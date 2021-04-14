@@ -9,11 +9,19 @@ The goal is to create a MAS Monitor Entity which reflects some sensor data colle
 The OSIPi Connector IoTFunction will need to be installed onto MAS' Monitor.
 
 ###1. Accessing the IoTFunction code
-This is a one-time operation that needs to be performed from a local clone of the Git repository, whose `scripts\` directory contains installation utilities.
-```
-git clone https://github.com/philippe-gregoire/mas_iotfuncs
-```
-will create a `mas_iotfuncs` directory on you local filesystem.
+The setup tools are implemented as python scripts, running from a local copy of the git repository:
+* A supported Python environment will be required, typically Python 3.7.6 or above. You may want to create an anaconda or python or virtual environment.
+
+* The Git repository local clone is a one-time operation that needs to be performed, whose `scripts\` directory contains installation utilities and setup tools:
+  ```
+  git clone https://github.com/philippe-gregoire/mas_iotfuncs
+  ```
+  will create a `mas_iotfuncs` directory on you local filesystem.
+
+* MAS IoTFunctions python dependencies need to be installed:
+  ```
+  pip install iotfunctions@git+https://github.com/ibm-watson-iot/functions.git@production
+  ```
 
 ###2. Collecting required access credentials
 The setup utility functions will need to have access to the MAS Monitor instance in order to deploy the IoTFunctions to it, and also optionally to the OSIPi server to introspect the data structures in order to gather configuration data.
@@ -46,7 +54,6 @@ This is not required for this installation, but for reference, the Connect (IoT 
 1. From the `scripts` directory, make a copy of the sample `credentials_osipi.json` file, into a file with your current **USERNAME** as suffix, i.e. `credentials_osipi_%USERNAME%.json`.
 1. Fill-in the values of the OSIPi PIServer running the API endpoint, `pihost` & `piport` and the connection credentials `piuser` & `pipass`.
 1. >___Validation___:  To validate the `credentials_osipi_%USERNAME%.json` file, you can execute the `scripts/TestOSIPIAPI.py list -elements` command, which list the Elements defined OSIPi, and `scripts/TestOSIPIAPI.py list -points`, which will list the Points defined.
-
 
 ## Creating a Maximo Monitor Entity as a twin of a OSIPi Element
 This section assumes that you have gathered the connectivity parameters in the two `credentials_as_%USERNAME%.json`and `credentials_osipi_%USERNAME%.json` files.
