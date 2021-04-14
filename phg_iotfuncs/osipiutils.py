@@ -148,20 +148,23 @@ def _getDatabases(piSrvParams):
 
     return r_databases
 
-def listOSIPiElements(piSrvParams,dump_attributes=True,_log=print):
+def listOSIPiElements(piSrvParams,dump_attributes=True,path_prefix=None,_log=print):
     r_databases=_getDatabases(piSrvParams)
 
     for database in r_databases['Items']:
-        _log(f"{database['Path']}: \"{database['Description']}\"")
+        if (not path_prefix) or database['Path'].startswith(path_prefix):
+            _log(f"{database['Path']}: \"{database['Description']}\"")
         elements=database['Links']['Elements']
-        #r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Links.Elements")
-        r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true")
+        r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Path;Items.Description;Items.Links.Elements;Items.Links.Attributes")
+        #r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true")
         for element in r_elements['Items']:
-            _log(f"{element['Path']}: \"{element['Description']}\"")
-            if dump_attributes:
-                r_attributes=getFromPi(piSrvParams,element['Links']['Attributes'])
-                for attr in r_attributes['Items']:
-                    _log(f"\t{attr['Name']}\ttype={attr['Type']}\tZero={attr['Zero']}\tSpan={attr['Span']}" )
+            elemPath=element['Path']
+            if (not path_prefix) or elemPath.startswith(path_prefix):
+                _log(f"{elemPath}: \"{element['Description']}\"")
+                if dump_attributes:
+                    r_attributes=getFromPi(piSrvParams,element['Links']['Attributes'])
+                    for attr in r_attributes['Items']:
+                        _log(f"\t{attr['Name']}\ttype={attr['Type']}\tZero={attr['Zero']}\tSpan={attr['Span']}" )
 
 def getParentElements(piSrvParams,databasePath,elementName):
     ''' Get Element values from OSIPi API server

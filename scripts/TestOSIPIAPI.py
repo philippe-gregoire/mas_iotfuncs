@@ -73,6 +73,7 @@ def main(argv):
     parser.add_argument('operation',help=f"Operation to perform",choices=['list','test'])
     parser.add_argument('-attributes',help='Dump attributes',action='store_true')
     parser.add_argument('-dataframe',help='Dump dataframe to file',action='store_true')
+    parser.add_argument('-pathprefix',help='List Elements with this prefix only',default=None)
 
     addOSIPiArgs(argv[0],'credentials_osipi',parser)
     args=parser.parse_args(argv[1:])
@@ -84,7 +85,7 @@ def main(argv):
             listOSIPiPoints(args,_log=logger.info)
         elif args.elements:
             from phg_iotfuncs.osipiutils import listOSIPiElements
-            listOSIPiElements(args,dump_attributes=args.attributes,_log=logger.info)
+            listOSIPiElements(args,dump_attributes=args.attributes,path_prefix=args.pathprefix,_log=logger.info)
         else:
             print(f"No list specified, use one of -points or -elements")
     elif args.operation=='test':
