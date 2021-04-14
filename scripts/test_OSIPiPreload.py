@@ -27,10 +27,11 @@ POINT_ATTR_MAP_FILE="POINT_ATTR_MAP.json"
 def addOSIPiArgs(refPath,credsFile,parser):
 
     creds_pi=script_utils.load_creds_file(refPath,credsFile)
+    parser.add_argument('-points', help=f"Use OSI Points API", required=False, action='store_true')
+    parser.add_argument('-elements', help=f"use OSIPi Elements API", required=False, action='store_true')
+
     for arg in ['pihost','piport','piuser','pipass']:
         parser.add_argument('-'+arg,required=False,default=creds_pi[arg] if arg in creds_pi else None)
-
-    parser.add_argument('ositype', type=str, help=f"Type of OSI API", choices=['Points','Elements'])
 
     parser.add_argument('-date_field', type=str, help=f"Field containing the event date/timestamp", required=False,default='date')
 

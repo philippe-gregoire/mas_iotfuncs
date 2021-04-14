@@ -32,7 +32,9 @@ def common_operation(args,db,db_schema):
     
     if args.operation=='info':
         # Gather information on the Monitor instance through its API
-        pass
+        logger.info(f"There are {len(db.entity_type_metadata)} entities defined in tenant {db.tenant_id}")
+        for entity in db.entity_type_metadata.values():
+            logger.info(f"\t{entity['name']}: {entity['description']} has {len(entity['dataItemDto'])} metrics")
     elif args.operation=='list_constants':
 
         # get a list of all constants

@@ -46,7 +46,7 @@ def testElementsAPI(args):
     from phg_iotfuncs.func_osipi import DEVICE_ATTR
 
      # Fetch the Elements from OSIPi Server.
-    elemVals=getOSIPiElements(args,args.databasePath,args.elementName,ATTR_FIELDS,DEVICE_ATTR)
+    elemVals=getOSIPiElements(args,args.database_path,args.element_name,ATTR_FIELDS,DEVICE_ATTR)
 
     # Get into DataFrame table form indexed by timestamp 
     df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
@@ -69,21 +69,37 @@ def main(argv):
     
     from test_OSIPiPreload import addOSIPiArgs
     parser=argparse.ArgumentParser()
-    parser.add_argument('-test', type=str, help=f"test to run, either Elements or Points", required=False,default='Elements')
+
+    parser.add_argument('operation',help=f"Operation to perform",choices=['list','test'])
+    parser.add_argument('-attributes',help='Dump attributes',action='store_true')
+    parser.add_argument('-dataframe',help='Dump dataframe to file',action='store_true')
 
     addOSIPiArgs(argv[0],'credentials_osipi',parser)
     args=parser.parse_args(argv[1:])
 
-    df=None
-    if args.test=='Points':
-        df=testPointsAPI(args)
-    elif args.test=='Elements':
-        df=testElementsAPI(args)
-    else:
-        print(f"No test specified")
+    if args.operation=='list':
+        if args.points:
+            # List all Points defined in the target OSIPi server
+            from phg_iotfuncs.osipiutils import listOSIPiPoints
+            listOSIPiPoints(args,_log=logger.info)
+        elif args.elements:
+            from phg_iotfuncs.osipiutils import listOSIPiElements
+            listOSIPiElements(args,dump_attributes=args.attributes,_log=logger.info)
+        else:
+            print(f"No list specified, use one of -points or -elements")
+    elif args.operation=='test':
+        df=None
+        if args.points:
+            df=testPointsAPI(args)
+        elif args.elements:
+            df=testElementsAPI(args)
+        else:
+            print(f"No test specified, use one of -points or -elements")
 
-    if df is not None:
-        df.to_csv("TESTOSIPI_Points.csv")
+        if args.dataframe and df is not None:
+            csvFile=f"TESTOSIPI_{'Points' if args.points else 'Elements'}.csv"
+            logger.info(f"Writing dataframe to {csvFile}")
+            df.to_csv(csvFile)
 
 if __name__=='__main__':
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)

@@ -96,7 +96,7 @@ def getOSIPiPoints(piSrvParams, pointsNameFilter,valueFields):
     for datasrv in r_datasrvrs['Items']:
         plog(datasrv)
         # build the request to get only points matching the provided filter and only selected fields        
-        r_points=getFromPi(piSrvParams,f"{datasrv['Links']['Points']}?nameFilter={pointsNameFilter}&selectedFields=Items.Name;Items.PointType,Items.Links.RecordedData")
+        r_points=getFromPi(piSrvParams,f"{datasrv['Links']['Points']}?nameFilter={pointsNameFilter}&selectedFields=Items.Name;Items.PointType;Items.Links.RecordedData")
         # plog(r_points)
         logger.info(f"Found {len(r_points['Items'])} points that match filter {pointsNameFilter}")
 
@@ -122,8 +122,8 @@ def mapPointValues(ptVals,deviceAttr,point_attr_map):
     flattened={}
 
     for ptKey,ptVal in ptVals.items():
-        if not ptKey in point_attr_map:
-            logger.warning(f"Point key {ptKey} not found in map")
+        if not point_attr_map or not ptKey in point_attr_map:
+            logger.warning(f"Point key {ptKey} not in map")
         else:
             # If an attribute name mapping is required, apply map
             attr_name=point_attr_map[ptKey]
@@ -148,19 +148,20 @@ def _getDatabases(piSrvParams):
 
     return r_databases
 
-def listOSIPiElements(piSrvParams,_log=print):
+def listOSIPiElements(piSrvParams,dump_attributes=True,_log=print):
     r_databases=_getDatabases(piSrvParams)
 
     for database in r_databases['Items']:
-        _log(f"path={database['Name']}: \"{database['Description']}\" => {database['Path']}")
+        _log(f"{database['Path']}: \"{database['Description']}\"")
         elements=database['Links']['Elements']
         #r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Links.Elements")
         r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true")
         for element in r_elements['Items']:
-            _log(f"\t{element['Name']}: {element['Description']} => {element['Path']}")
-            r_attributes=getFromPi(piSrvParams,element['Links']['Attributes'])
-            for attr in r_attributes['Items']:
-                _log(f"\t\t{attr['Name']}\ttype={attr['Type']}\tZero={attr['Zero']}\tSpan={attr['Span']}" )
+            _log(f"{element['Path']}: \"{element['Description']}\"")
+            if dump_attributes:
+                r_attributes=getFromPi(piSrvParams,element['Links']['Attributes'])
+                for attr in r_attributes['Items']:
+                    _log(f"\t{attr['Name']}\ttype={attr['Type']}\tZero={attr['Zero']}\tSpan={attr['Span']}" )
 
 def getParentElements(piSrvParams,databasePath,elementName):
     ''' Get Element values from OSIPi API server
