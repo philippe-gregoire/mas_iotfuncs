@@ -17,7 +17,7 @@ import sys,logging
 
 logger = logging.getLogger(__name__)
 
-import iotf_utils
+from phg_iotfuncs import iotf_utils
 
 # Mapping of OSIPi Types to Python types
 OSIPI_TYPES_MAP={

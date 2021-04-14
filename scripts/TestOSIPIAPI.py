@@ -23,11 +23,12 @@ def testPointsAPI(args):
     from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiPoints,mapPointValues,convertToEntities
     from phg_iotfuncs.func_osipi import DEVICE_ATTR
 
-    with io.open(os.path.join(os.path.dirname(__file__),args.point_attr_map_file)) as f:
-        point_attr_map=json.load(f)
+    point_attr_map=script_utils.loadJSON(args.point_attr_map_file)
+    # with io.open(os.path.join(os.path.dirname(__file__),args.point_attr_map_file)) as f:
+    #     point_attr_map=json.load(f)
     
     # Fetch the Points from OSIPi Server.
-    ptVals=getOSIPiPoints(args,args.name_filter,ATTR_FIELDS)
+    ptVals=getOSIPiPoints(args,args.points_name_prefix,ATTR_FIELDS)
     
     # Map values to a flattened version indexed by timestamp
     flattened=mapPointValues(ptVals,DEVICE_ATTR,point_attr_map)
@@ -97,7 +98,7 @@ def main(argv):
         else:
             print(f"No test specified, use one of -points or -elements")
 
-        if args.to_csvscr and df is not None:
+        if args.to_csv and df is not None:
             csvFile=f"TESTOSIPI_{'Points' if args.points else 'Elements'}.csv"
             logger.info(f"Writing dataframe to {csvFile}")
             df.to_csv(csvFile)
