@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
             {
             "name": "Python : Monitor info",
             "type": "python",
@@ -41,20 +42,20 @@
             "justMyCode": false
         },
         {
-            "name": "Python : create Entity OSIPI Elements",
+            "name": "Python : create Entity OSIPI Elements for Motor Bearing",
             "type": "python",
             "request": "launch",
             "program": "scripts/test_OSIPiPreload.py",
-            "args": ["create","-elements","-parent_element","\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor"],
+            "args": ["create","-elements","-parent_element","\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor","-entity_type","Bearing"],
             "console": "integratedTerminal",
             "justMyCode": false
         },
         {
-            "name": "Python : create Entity OSIPI Points",
+            "name": "Python : create Entity OSIPI Points from Modbus data",
             "type": "python",
             "request": "launch",
             "program": "scripts/test_OSIPiPreload.py",
-            "args": ["create","-points","-entity_type","PointsTestEntity"],
+            "args": ["create","-points","-point_attr_map_file","POINT_ATTR_MAP.json","-points_name_prefix","Modbus1.1.Holding16.*","-entity_type","ModBusVib"],
             "console": "integratedTerminal",
             "justMyCode": false
         },

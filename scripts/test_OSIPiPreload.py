@@ -36,10 +36,10 @@ def addOSIPiArgs(refPath,credsFile,parser):
     parser.add_argument('-entity_type', type=str, help=f"Entity type name", required=False,default=None)
     parser.add_argument('-date_field', type=str, help=f"Field containing the event date/timestamp", required=False,default='date')
 
-    parser.add_argument('-point_attr_map_file', type=str, help=f"OSIPi Points mapping JSON file name", required=False,default=POINT_ATTR_MAP_FILE)
-    parser.add_argument('-points_name_prefix', type=str, help=f"OSIPi Points name prefix", required=False,default=f"{POINT_PREFIX}*")
+    parser.add_argument('-point_attr_map_file', type=str, help=f"OSIPi Points mapping JSON file name", required=False,default=None)
+    parser.add_argument('-points_name_prefix', type=str, help=f"OSIPi Points name prefix", required=False,default=None)
 
-    parser.add_argument('-parent_element_path', type=str, help=f"OSIPi Parent Element name", required=False,default='\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor')
+    parser.add_argument('-parent_element_path', type=str, help=f"OSIPi Parent Element name", required=False,default=None)
 
 def main(argv):
     '''
@@ -73,18 +73,34 @@ def main(argv):
         from phg_iotfuncs.func_osipi import PhGOSIPIPointsPreload as TargetFunc
         entityName=args.entity_type if args.entity_type else args.entityNamePrefix+TargetFunc.__name__
         if args.operation=='test':
-            test(db,db_schema,TargetFunc,
-                    args.pihost, args.piport,
-                    args.piuser,args.pipass,
-                    args.name_filter,args.date_field)
+            point_attr_map=script_utils.loadJSON(args.point_attr_map_file)
+            test(db,db_schema,
+                    TargetFunc(args.pihost, args.piport,args.piuser,args.pipass,
+                                args.points_name_prefix, point_attr_map, args.date_field,
+                                'osipi_preload_ok'))
         elif args.operation=='register':
             script_utils.registerFunction(db,db_schema,TargetFunc)
         elif args.operation=='create':
+            if not args.point_attr_map_file or not args.points_name_prefix:
+                print(f"-point_attr_map_file and -points_name_prefix must be specified for operation {args.operation}")
+                return
+
             point_attr_map=script_utils.loadJSON(args.point_attr_map_file)
             attributes=list(dict.fromkeys([v[1] for v in point_attr_map.values()]))
             print(f"Creating entity {entityName} with attributes {attributes} specified in {args.point_attr_map_file}")
-            # script_utils.createEntity(db,db_schema,entityName,attributes,function=TargetFunc)
-            script_utils.createEntity(db,db_schema,entityName,attributes)
+            script_utils.createEntity(db,db_schema,entityName,attributes,
+                    function=TargetFunc,
+                    func_input={
+                        'osipi_host': args.pihost,
+                        'osipi_port': args.piport,
+                        'osipi_user': args.piuser,
+                        'osipi_pass': args.pipass, 
+                        'date_field': args.date_field,
+                        'name_filter': args.points_name_prefix,
+                        'points_attr_map': point_attr_map
+                    },
+                    func_output={'osipi_preload_ok':'osipi_preload_ok'})
+            # script_utils.createEntity(db,db_schema,entityName,attributes)
         elif args.operation=='osi_list':
             # List all Points defined in the target OSIPi server
             from phg_iotfuncs.osipiutils import listOSIPiPoints
@@ -94,17 +110,21 @@ def main(argv):
         from phg_iotfuncs.func_osipi import PhGOSIElemsPreload as TargetFunc
         entityName=args.entity_type if args.entity_type else args.entityNamePrefix+TargetFunc.__name__
         if args.operation=='test':
-            test(db,db_schema,TargetFunc,
-                    args.pihost, args.piport,
-                    args.piuser,args.pipass,
-                    args.parent_element_path,
-                    args.date_field)
+            test(db,db_schema,
+                    TargetFunc(
+                        args.pihost, args.piport,args.piuser,args.pipass,
+                        args.parent_element_path,args.date_field,
+                        'osipi_elements_preload_ok'))
         elif args.operation=='register':
             script_utils.registerFunction(db,db_schema,TargetFunc)
         elif args.operation=='create':
             # get a data sample to figure out the attributes
             from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
             from phg_iotfuncs.func_osipi import DEVICE_ATTR
+
+            if not args.parent_element_path:
+                print(f"-parent_element_path must be specified for operation {args.operation}")
+                return
 
             # Fetch the Elements from OSIPi Server.
             elemVals=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
@@ -113,8 +133,19 @@ def main(argv):
             df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
             attributes=df.columns
             print(f"Creating entity {entityName} with attributes {attributes}")
-            # script_utils.createEntity(db,db_schema,entityName,attributes,function=TargetFunc)
-            script_utils.createEntity(db,db_schema,entityName,attributes)
+            script_utils.createEntity(db,db_schema,entityName,attributes,
+                    function=TargetFunc,
+                    func_input={
+                        'osipi_host': args.pihost,
+                        'osipi_port': args.piport,
+                        'osipi_user': args.piuser,
+                        'osipi_pass': args.pipass, 
+                        'date_field': args.date_field,
+                        'parent_element_path': args.parent_element_path
+                    },
+                    func_output={'osipi_elements_preload_ok':'osipi_elements_preload_ok'})
+
+            #script_utils.createEntity(db,db_schema,entityName,attributes)
         elif args.operation=='osi_list':
             # List all Elements defined in the target OSIPi server
             from phg_iotfuncs.osipiutils import listOSIPiElements
@@ -143,9 +174,7 @@ def main(argv):
     else:
         script_utils.common_operation(args,db,db_schema)
 
-def test(db,db_schema,iot_func,osipi_host, osipi_port,
-            osipi_user, osipi_pass, 
-            name_filter, date_field):
+def test(db,db_schema,iot_func):
     ''' Test the PhGOSIPIPreload function
 
     Import and instantiate the functions to be tested
@@ -163,12 +192,8 @@ def test(db,db_schema,iot_func,osipi_host, osipi_port,
     '''
     ####################################################################################
     try:
-        logger.info(f"Creating {iot_func} for {osipi_host}:{osipi_port}")
-        fn = iot_func(osipi_host, osipi_port, osipi_user, osipi_pass, 
-                    name_filter, date_field,
-                    osipi_preload_ok='osipi_preload_ok')
-        logger.info(f"Executing test for {iot_func}")
-        fn.execute_local_test(db=db,db_schema=db_schema,to_csv=False)
+        logger.info(f"Executing test for {iot_func.__name__}")
+        iot_func.execute_local_test(db=db,db_schema=db_schema,to_csv=False)
     except AttributeError as attrErr:
         logger.info(f"{attrErr}")
     except Exception as exc:

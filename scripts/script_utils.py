@@ -29,7 +29,7 @@ def add_operations(parser,operations):
 
 def common_operation(args,db,db_schema):
     from phg_iotfuncs import iotf_utils
-    
+
     if args.operation=='info':
         # Gather information on the Monitor instance through its API
         logger.info(f"There are {len(db.entity_type_metadata)} entities defined in tenant {db.tenant_id}")
@@ -119,7 +119,6 @@ def load_creds_file(refPath,prefix):
     import json,io,argparse
     with io.open(creds_file,'r') as f:
         j=json.load(f)
-        # return argparse.Namespace(**j)
         return j
 
 def default_creds_file(refPath,prefix):
@@ -135,7 +134,6 @@ def setup_iotfunc(credsFileName,echoSQL=False,loglevel=logging.INFO):
     import iotfunctions, iotfunctions.db
 
     ## Set up logging level
-    # EngineLogging.configure_console_logging(logging.DEBUG)
     iotfunctions.enginelog.EngineLogging.configure_console_logging(loglevel)
 
     '''
@@ -231,15 +229,14 @@ def inferTypesFromCSV(csv_file):
         logger.info(f"All columns have been mapped from {csv_file}: {csv_columns}")
     return csv_columns
 
-def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),date_column='date',function=None):
+def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),date_column='date',function=None,func_input=None,func_output=None):
     '''
     Create an Entity by name and columns
     columns is expected to be an array of sqlalchemy.Column objects. if they are strings, they will be converted to Columns
     '''
     logger.info(f"Creating Entity {entity_name} for {len(columns)} columns")
-
-    import iotfunctions.metadata
     from phg_iotfuncs import iotf_utils
+    import iotfunctions.metadata
 
     # Align Columns which are not sqlalchemy yet
     columns=[c if isinstance(c,sqlalchemy.Column) else sqlalchemy.Column(iotf_utils.toMonitorColumnName(str(c)),sqlalchemy.TIMESTAMP() if c==date_column else columnType) for c in columns]
@@ -249,40 +246,18 @@ def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),
     You can create entity types through the IoT Platform or using the python API as shown below.
     The database schema is only needed if you are not using the default schema. You can also rename the timestamp.
     '''
+    logger.info(f"Dropping Entity table for {entity_name}")
+    db.drop_table(entity_name, schema = db_schema)
 
-    if function:
-        entity = iotfunctions.metadata.BaseCustomEntityType(
-                    entity_name,
-                    db,
-                    columns=columns,
-                    drop_existing=True,
-                    db_schema=db_schema,
-                    functions=[function],
-                    **{
-                        '_timestamp' : date_column,
-                        '_db_schema' : db_schema
-                    }
-                )
-    else:
-        logger.info(f"Dropping Entity table for {entity_name}")
-        db.drop_table(entity_name, schema = db_schema)
-
-        entity = iotfunctions.metadata.EntityType(
-                    entity_name,
-                    db,
-                    *columns,
-                    **{
-                        '_timestamp' : date_column,
-                        '_db_schema' : db_schema
-                    }
-                )
-    # entity = iotfunctions.metadata.BaseCustomEntityType(name=entity_name,db=db,
-                        # columns=csv_columns,
-                        # constants=,
-                        # dimension_columns=,
-                        # functions=
-                        # )
-
+    entity = iotfunctions.metadata.EntityType(
+                entity_name,
+                db,
+                *columns,
+                **{
+                    '_timestamp' : date_column,
+                    '_db_schema' : db_schema
+                }
+            )
     '''
     When creating an EntityType object you will need to specify the name of the entity, the database
     object that will contain entity data
@@ -291,16 +266,31 @@ def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),
     To also register the functions and constants associated with the entity type, specify
     'publish_kpis' = True.
     '''
-    from pprint import pprint
     from urllib3.exceptions import HTTPError
     try:
         logger.info(f"Registering Entity {entity}")
-        rc=entity.register(raise_error=True,publish_kpis=function is not None)
+        rc=entity.register(raise_error=True,publish_kpis=False)
         if len(rc)>0:
-            logger.info(f"Entity registration rc:")
-            pprint(rc)
+            logger.info(f"Entity registration rc: "+pprint.pformat(rc))
     except HTTPError as httpErr:
-        logger.error(f"Entity registration rc: {httpErr}")      
+        logger.error(f"Entity registration rc: {httpErr}")
+        return
+
+    if function and func_input and func_output:
+        import iotfunctions.db
+        kpiFunctionDto={
+            "functionName": function.__name__,
+            "input": func_input,
+            "output": func_output,
+            "schedule": {},
+            "backtrack": {},
+            "enabled": True
+            }
+
+        # Register the function
+        logger.info(f"Adding function {kpiFunctionDto['functionName']} to {entity}")
+        rc=db.http_request('kpiFunction',entity_name,'POST',payload=kpiFunctionDto)
+        logger.info(rc)
 
 def registerFunction(db,db_schema,iot_func):
     logger.info(f"Registering function {iot_func} with db={db}")
