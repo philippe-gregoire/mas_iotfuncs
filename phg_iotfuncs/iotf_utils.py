@@ -19,6 +19,9 @@ import logging,pprint
 
 logger = logging.getLogger(__name__)
 
+# Default TimeStamp attribute name
+DEFAULT_TS_ATTR='evt_timestamp'
+
 def constantType(entity_name):
     return 'defaultConstants' if entity_name is None else 'constants'
 

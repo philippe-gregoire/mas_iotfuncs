@@ -73,7 +73,7 @@ def main(argv):
         from phg_iotfuncs.func_osipi import PhGOSIPIPointsPreload as TargetFunc
         entityName=args.entity_type if args.entity_type else args.entityNamePrefix+TargetFunc.__name__
         if args.operation=='test':
-            point_attr_map=script_utils.loadJSON(args.point_attr_map_file)
+            point_attr_map=script_utils.loadPointsAttrMap(args.point_attr_map_file)
             test(db,db_schema,
                     TargetFunc(args.pihost, args.piport,args.piuser,args.pipass,
                                 args.points_name_prefix, point_attr_map, args.date_field,
@@ -85,10 +85,15 @@ def main(argv):
                 print(f"-point_attr_map_file and -points_name_prefix must be specified for operation {args.operation}")
                 return
 
-            point_attr_map=script_utils.loadJSON(args.point_attr_map_file)
-            attributes=list(dict.fromkeys([v[1] for v in point_attr_map.values()]))
-            print(f"Creating entity {entityName} with attributes {attributes} specified in {args.point_attr_map_file}")
-            script_utils.createEntity(db,db_schema,entityName,attributes,
+            point_attr_map=script_utils.loadPointsAttrMap(args.point_attr_map_file)
+
+            # Create the list of columns
+            columns=[script_utils.to_sqlalchemy_column(v[1],v[2] if len(v)>2 else float,args.date_field) for v in point_attr_map.values()]                
+
+            # attributes=list(dict.fromkeys([v[1] for v in point_attr_map.values()]))
+
+            print(f"Creating entity {entityName} with columns {columns} specified in {args.point_attr_map_file}")
+            script_utils.createEntity(db,db_schema,entityName,columns,
                     function=TargetFunc,
                     func_input={
                         'osipi_host': args.pihost,

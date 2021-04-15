@@ -20,6 +20,15 @@ import logging, pprint
 logger = logging.getLogger(__name__)
 
 import sqlalchemy
+SQLTYPEMAP={
+    'float64':sqlalchemy.Float(),
+    'float':sqlalchemy.Float(),
+    float:sqlalchemy.Float(),
+    'int64':sqlalchemy.Float(),
+    'datetime64[ns]':sqlalchemy.DateTime(),
+    'str':sqlalchemy.VARCHAR(256),
+    str:sqlalchemy.VARCHAR(256)
+    }
 
 # Built-In Functions
 # from iotfunctions import bif
@@ -213,21 +222,38 @@ def inferTypesFromCSV(csv_file):
     '''
     import pandas as pd
     import numpy as np
-    import sqlalchemy
 
     # Map np types to sqlalchemy
-    TYPEMAP={'float64':sqlalchemy.Float(),'int64':sqlalchemy.Float(),'datetime64[ns]':sqlalchemy.DateTime()}
-
     df=pd.read_csv(csv_file,parse_dates=['date'],infer_datetime_format=True)
     logger.info(f"Loaded df {df.describe(include='all')}")
 
     # convert types from numpy to a dict of sqlalchemy types
-    csv_columns=[sqlalchemy.Column(k.replace(' ','_').replace('.','_'),TYPEMAP[v.name]) for k,v in df.dtypes.to_dict().items() if v.name in TYPEMAP]
+    csv_columns=[sqlalchemy.Column(k.replace(' ','_').replace('.','_'),SQLTYPEMAP[v.name]) for k,v in df.dtypes.to_dict().items() if v.name in SQLTYPEMAP]
     if len(csv_columns)!=len(df.columns):
-        logger.error(f"Some columns could not be mapped: {[(k,v) for k,v in df.dtypes.to_dict().items() if v.name not in TYPEMAP]}")
+        logger.error(f"Some columns could not be mapped: {[(k,v) for k,v in df.dtypes.to_dict().items() if v.name not in SQLTYPEMAP]}")
     else:
         logger.info(f"All columns have been mapped from {csv_file}: {csv_columns}")
     return csv_columns
+
+def to_sqlalchemy_column(column,defaultType,date_column):
+    ''' Convert a column name to a sqlalchemy column'''
+    from phg_iotfuncs import iotf_utils
+    if isinstance(column,sqlalchemy.Column):
+        return column
+    else:
+        if column==date_column:
+            colType=sqlalchemy.TIMESTAMP()
+        else:
+            if isinstance(defaultType,sqlalchemy.types.TypeEngine):
+                colType=defaultType
+            elif str(defaultType) in SQLTYPEMAP:
+                colType=SQLTYPEMAP[str(defaultType)]
+            elif defaultType in SQLTYPEMAP:
+                colType=SQLTYPEMAP[defaultType]
+            else:
+                logger.error(f"Column {column}'s' type {str(defaultType)} cannot be mapped by SQLTYPEMAP")
+                raise "Cannot Map"
+        return sqlalchemy.Column(iotf_utils.toMonitorColumnName(str(column)),colType)
 
 def createEntity(db,db_schema,entity_name,columns,columnType=sqlalchemy.Float(),date_column='date',function=None,func_input=None,func_output=None):
     '''
@@ -303,7 +329,25 @@ def registerFunction(db,db_schema,iot_func):
     logger.info(f"register rc={rc}")
 
 def loadJSON(json_file):
-    ''' Load a local JSON file into a dict '''
+    ''' Load a local JSON file into a dict
+        Note that there is a special case when the file is specified as '{}', we return an empty dict
+    '''
     import io,os,json
-    with io.open(os.path.join(os.path.dirname(__file__),json_file)) as f:
-        return json.load(f)
+    if json_file=='{}':
+        return {}
+    else:
+        with io.open(os.path.join(os.path.dirname(__file__),json_file)) as f:
+            return json.load(f)
+
+def loadPointsAttrMap(point_attr_map_file):
+    ''' Load a Points attribute map, either from file, or create from the OSIPi server
+        The format of the JSON map is:
+        {"point_name1": ["deviceid1","attribute1"],
+            "point_name2": ["deviceid2","attribute2"],
+        ....
+            "point_nameN": ["deviceidN","attributeN"]
+            }
+        If the mapping dict is empty, or the file is specified as {}, a simpler single-instance mapping
+        is applied, where the trailing string after the prefix is used as the attribute name, 
+    '''
+    return {} if point_attr_map_file=='{}' else loadJSON(point_attr_map_file)
