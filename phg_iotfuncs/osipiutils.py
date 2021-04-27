@@ -227,9 +227,10 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr,start
             if isinstance(startTime,datetime.datetime):
                 startTime=startTime.replace(tzinfo=None).isoformat()
         else:
-            # Get all attributes
-            startTime='-1'
-        r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?startTime={startTime}&selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}",logger=logger)
+            # Get all recorded values from 30 days back
+            startTime='-30d'
+        # Note that we swap end and start time to get the newest data items first
+        r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?boundaryType=Outside&startTime=*&endTime={startTime}&selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}",logger=logger)
         plog(r_data,logger=logger)
         for d in r_data['Items']:
             attr_name=d['Name']

@@ -51,7 +51,7 @@ def common_operation(args,db,db_schema):
         pprint.pprint(iotf_utils.getConstant(db, constant_name=None))
     elif args.operation=='set_constant':
         # Put a constant
-        k_name=args.lastseq_constant
+        k_name=args.const_value
         k_desc='PhG Konst'
         try:
             rc=iotf_utils.registerConstant(db,k_name,int,k_desc)

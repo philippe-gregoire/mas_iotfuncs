@@ -67,7 +67,7 @@ class PhGCommonPreload(BasePreload):
         self.logger.debug(pprint.pformat(entity_meta_dict))
 
         # get global constant (Current bug with entity-constant)
-        last_seq=iotf_utils.getConstant(entity_type.db,self.lastseq_constant,-1,auto_register=True,const_type=self.lastseq_type)
+        last_seq=iotf_utils.getConstant(entity_type.db,self.lastseq_constant,'-1',auto_register=True,const_type=self.lastseq_type)
 
         # This class is setup to write to the entity time series table
         table = entity_type.name
@@ -78,7 +78,7 @@ class PhGCommonPreload(BasePreload):
     def preload(self,entity_type,db,table,entityMetaDict,params,entity_meta_dict,last_seq):
         """
         """
-        raise NotImplemented #("You need to override this method")
+        raise NotImplementedError("You need to override this method")
 
     def updateLastSeq(self,db,sequence_number):
         """
