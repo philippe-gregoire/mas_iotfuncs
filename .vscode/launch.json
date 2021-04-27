@@ -28,7 +28,7 @@
             "type": "python",
             "request": "launch",
             "program": "scripts/TestOSIPIAPI.py",
-            "args": ["test","-elements", "-parent_element", "\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor"],
+            "args": ["test","-elements", "-parent_element", "\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor", "-to_csv"],
             "console": "integratedTerminal",
             "justMyCode": false
         },

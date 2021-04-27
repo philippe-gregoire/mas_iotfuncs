@@ -117,7 +117,7 @@ def renameToDBColumns(df,entity_meta_dict):
 
 def adjustDataFrameColumns(db,entity_meta_dict,df,eventType,force_upper_columns):
     """
-    Adjust the raw dataframe columns to match expected format by IoTF DB
+    Adjust the raw dataframe columns to match format expected by IoTF DB
     """
     import datetime as dt
 
@@ -130,7 +130,7 @@ def adjustDataFrameColumns(db,entity_meta_dict,df,eventType,force_upper_columns)
     required_lower_cols =[c.lower() for c in  db_column_names]
     logger.info(f"Required db lowercased columns={required_lower_cols}")
 
-    # user lowercased names for dataframe too, except for keep_case_columns field
+    # user lowercased names for dataframe too
     lower_columns_map={c:c.lower() for c in df.columns}
     df.rename(columns=lower_columns_map,inplace=True)
 
