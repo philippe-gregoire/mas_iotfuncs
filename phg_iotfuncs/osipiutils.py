@@ -262,6 +262,6 @@ def convertToEntities(flattened,entity_date_field,deviceAttr):
     df.rename(columns={ts_index_col:entity_date_field},inplace=True)
 
     # Adjust column names, set updated_utc to current ts
-    df['updated_utc']=df[ts_index_col]
+    df['updated_utc']=df[entity_date_field]
 
     return df
