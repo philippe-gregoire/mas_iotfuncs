@@ -38,12 +38,12 @@ ATTR_FIELDS=[ATTR_FIELD_VAL,ATTR_FIELD_TS]
 
 TAB='\t' # for use in f-strings
 
-def plog(msg,level=logging.DEBUG):
+def plog(msg,level=logging.DEBUG,logger=logger):
     from pprint import pformat
     if logger.isEnabledFor(level):
         logger.log(level,pformat(msg))
 
-def getFromPi(srvParams,url=None,pipath=None):
+def getFromPi(srvParams,url=None,pipath=None,logger=logger):
     ''' Issue a GET request to OSPi API
         srvParams has attributes pihost, piport, piuser, pipass
 
@@ -66,14 +66,14 @@ def selectedFields(fields,prefix='Items',sep=';'):
     ''' Helper function '''
     return sep.join([f"{prefix}.{f}" for f in fields])
 
-def _getDataServers(piSrvParams):
+def _getDataServers(piSrvParams,logger=logger):
     # Navigate to API root
-    r_root=getFromPi(piSrvParams)
-    plog(r_root)
+    r_root=getFromPi(piSrvParams,logger=logger)
+    plog(r_root,logger=logger)
 
     # Navigate to DataServers
-    r_datasrvrs=getFromPi(piSrvParams,r_root['Links']['DataServers'])
-    plog(r_datasrvrs)
+    r_datasrvrs=getFromPi(piSrvParams,r_root['Links']['DataServers'],logger=logger)
+    plog(r_datasrvrs,logger=logger)
     
     return r_datasrvrs
 
@@ -90,22 +90,22 @@ def listOSIPiPoints(piSrvParams,_log=print):
         for point in r_points['Items']:
             _log(f"{point['Name']}\tType={point['PointType']}\tSpan={point['Span']}\tZero={point['Zero']}")
 
-def getOSIPiPoints(piSrvParams, pointsNameFilter,valueFields):
+def getOSIPiPoints(piSrvParams, pointsNameFilter,valueFields,logger=logger):
     ''' Get Point values from OSIPi API server
     '''
     r_datasrvrs=_getDataServers(piSrvParams)
 
     # Navigate to Points in first Item
     for datasrv in r_datasrvrs['Items']:
-        plog(datasrv)
+        plog(datasrv,logger=logger)
         # build the request to get only points matching the provided filter and only selected fields        
         r_points=getFromPi(piSrvParams,f"{datasrv['Links']['Points']}?nameFilter={pointsNameFilter}&selectedFields=Items.Name;Items.PointType;Items.Links.RecordedData")
         # plog(r_points)
         logger.info(f"Found {len(r_points['Items'])} points that match filter {pointsNameFilter}")
 
         # Dump first point for debugging
-        plog(r_points['Items'][0])
-        plog(getFromPi(piSrvParams,r_points['Items'][0]['Links']['RecordedData']))
+        plog(r_points['Items'][0],logger=logger)
+        plog(getFromPi(piSrvParams,r_points['Items'][0]['Links']['RecordedData']),logger=logger)
 
         # Get the values
         pointValues={}
@@ -115,7 +115,7 @@ def getOSIPiPoints(piSrvParams, pointsNameFilter,valueFields):
             logger.debug(f"{point['Name']}\t[#{len(r_ptvals['Items'])}]\t= {TAB.join(str(r_ptvals['Items'][-1][f]) for f in valueFields)}")
         return pointValues
 
-def mapPointValues(ptVals,deviceAttr,point_attr_map):
+def mapPointValues(ptVals,deviceAttr,point_attr_map,logger=logger):
     """
     Map the values from Points to device attributes, indexed by timestamp
 
@@ -140,14 +140,14 @@ def mapPointValues(ptVals,deviceAttr,point_attr_map):
 
     return flattened
 
-def _getDatabases(piSrvParams):
+def _getDatabases(piSrvParams,logger=logger):
     # Navigate to API assetservers root
-    r_assets=getFromPi(piSrvParams,pipath='assetservers')
-    plog(r_assets)
+    r_assets=getFromPi(piSrvParams,pipath='assetservers',logger=logger)
+    plog(r_assets,logger=logger)
 
     # Navigate to DataServers
-    r_databases=getFromPi(piSrvParams,r_assets['Items'][0]['Links']['Databases'])
-    plog(r_databases)
+    r_databases=getFromPi(piSrvParams,r_assets['Items'][0]['Links']['Databases'],logger=logger)
+    plog(r_databases,logger=logger)
 
     return r_databases
 
@@ -169,7 +169,7 @@ def listOSIPiElements(piSrvParams,dump_attributes=True,path_prefix=None,_log=pri
                     for attr in r_attributes['Items']:
                         _log(f"\t{attr['Name']}\ttype={attr['Type']}\tZero={attr['Zero']}\tSpan={attr['Span']}" )
 
-def getParentElements(piSrvParams,parentElementPath):
+def getParentElements(piSrvParams,parentElementPath,logger=logger):
     ''' Get Element values from OSIPi API server
         Navigation path from API Root:
         - Asset server (https://192.168.63.39/PIWebAPI/assetservers)
@@ -182,7 +182,7 @@ def getParentElements(piSrvParams,parentElementPath):
         Element with given name, then drill-down through its Elements
         below this will be the motor parts (Entities) from which we get 'RecordedData'
     ''' 
-    r_databases=_getDatabases(piSrvParams)
+    r_databases=_getDatabases(piSrvParams,logger=logger)
 
     # Check Path
     elements=None
@@ -200,29 +200,37 @@ def getParentElements(piSrvParams,parentElementPath):
 
     # Get the named Element, parent of sensors
     parentElementName=parentElementPath.split('\\')[-1]
-    r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Links.Elements;Items.Path&nameFilter={parentElementName}")
+    r_elements=getFromPi(piSrvParams,f"{elements}?searchFullHierarchy=true&selectedFields=Items.Links.Elements;Items.Path&nameFilter={parentElementName}",logger=logger)
 
     # We get the parent element, now list the children Elements (sensors) within
     #r_elements=getFromPi(piSrvParams,r_elements['Items'][0]['Links']['Elements'])
     for element in r_elements['Items']:
         if element['Path']==parentElementPath:
-            r_elements=getFromPi(piSrvParams,f"{element['Links']['Elements']}?selectedFields=Items.Name;Items.Links.RecordedData")
-            plog(r_elements)
+            r_elements=getFromPi(piSrvParams,f"{element['Links']['Elements']}?selectedFields=Items.Name;Items.Links.RecordedData",logger=logger)
+            plog(r_elements,logger=logger)
 
             return r_elements
     
     return None
 
-def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr):
-    r_elements=getParentElements(piSrvParams, parentElementPath)
+def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr,startTime=None,logger=logger):
+    r_elements=getParentElements(piSrvParams, parentElementPath,logger=logger)
 
     # We want to generate a dict indexed by (ts,deviceId)
     sensorValues={}
     for sensor in r_elements['Items']:
         deviceId=sensor['Name']
-        #r_data=getFromPi(piSrvParams,sensor['Links']['RecordedData'])
-        r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}")
-        plog(r_data)
+        #r_data=getFromPi(piSrvParams,sensor['Links']['RecordedData'],logger=logger)
+        if startTime:
+            import datetime
+            # Format expected by OSIPi API: 2021-04-27T07:29:16.3108215Z, e.g. ISO Format
+            if isinstance(startTime,datetime.datetime):
+                startTime=startTime.replace(tzinfo=None).isoformat()
+        else:
+            # Get all attributes
+            startTime='-1'
+        r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?startTime={startTime}&selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}",logger=logger)
+        plog(r_data,logger=logger)
         for d in r_data['Items']:
             attr_name=d['Name']
             #attr_type=d['PointType']
@@ -234,7 +242,7 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr):
 
     return sensorValues
 
-def convertToEntities(flattened,entity_date_field,deviceAttr):
+def convertToEntities(flattened,entity_date_field,deviceAttr,logger=logger):
     """
         Convert the raw data to an Entity DataFrame
     """
@@ -243,7 +251,7 @@ def convertToEntities(flattened,entity_date_field,deviceAttr):
 
     # We get the messages in an array of dicts, convert to dataframe
     df=pd.DataFrame.from_records([v for v in flattened.values()])
-    logger.info(f"df initial columns={[c for c in df.columns]}")
+    logger.debug(f"df initial columns={[c for c in df.columns]}")
 
     # Find the date column. We know at this stage that the records we keep have a date_field
     df[ATTR_FIELD_TS]=pd.to_datetime(df[ATTR_FIELD_TS],errors='coerce')
@@ -254,7 +262,7 @@ def convertToEntities(flattened,entity_date_field,deviceAttr):
     # Adjust columns, add index columns deviceid, rcv_timestamp_utc
     id_index_col=deviceAttr
     ts_index_col='rcv_timestamp_utc'    # Column which holds the timestamp part of the index
-    logger.info(f"Using columns [{deviceAttr},{ATTR_FIELD_TS}] as index [{id_index_col},{ts_index_col}]")
+    logger.debug(f"Using columns [{deviceAttr},{ATTR_FIELD_TS}] as index [{id_index_col},{ts_index_col}]")
     df.rename(columns={ATTR_FIELD_TS:ts_index_col},inplace=True)
     df.set_index([id_index_col,ts_index_col],drop=False,inplace=True)
 

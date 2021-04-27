@@ -104,7 +104,7 @@ def toMonitorColumnName(colName):
     ''' Map a column name for Monitor '''
     return colName.replace(' ','_').replace('.','_')
 
-def renameToDBColumns(df,entity_meta_dict):
+def renameToDBColumns(df,entity_meta_dict,logger=logger):
     """ Rename an entity dataframe to database Column's names
     """
     # Map column names for special characters
@@ -115,7 +115,7 @@ def renameToDBColumns(df,entity_meta_dict):
     logger.info(f"Column map {pprint.pformat(columnMap)}")
     df.rename(columns=columnMap,inplace=True)
 
-def adjustDataFrameColumns(db,entity_meta_dict,df,eventType,force_upper_columns):
+def adjustDataFrameColumns(db,entity_meta_dict,df,eventType,force_upper_columns,logger=logger):
     """
     Adjust the raw dataframe columns to match format expected by IoTF DB
     """

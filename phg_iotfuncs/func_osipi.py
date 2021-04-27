@@ -86,12 +86,6 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         ]
         return (inputs, outputs)
 
-    @classmethod
-    def get_module_files(cls,pattern):
-        module_path=os.path.dirname(importlib.import_module(cls.__module__).__file__)
-        logger.debug(f"module_path={module_path}")
-        return [f for f in os.listdir(module_path) if fnmatch.fnmatch(f,pattern)],module_path
-
     def preload(self,entity_type,db,table,entityMetaDict,params,entity_meta_dict,last_seq):
         """
             Implement the preload code for OSIPi Elements API
@@ -108,29 +102,29 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
     
         # Get the specified Points attributes fields from OSIServer
-        elemVals=getOSIPiElements(self.srvParams,self.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
+        elemVals=getOSIPiElements(self.srvParams,self.parent_element_path,ATTR_FIELDS,DEVICE_ATTR,startTime=last_seq,logger=self.logger)
 
         # If no records, return immediately
         if len(elemVals)==0:
-            logger.warning(f"No messages returned from OSIPi")
+            self.logger.warning(f"No messages returned from OSIPi")
             return False
-        logger.info(f"Retrieved messages for {len(elemVals)} attributes")
+        self.logger.info(f"Retrieved messages for {len(elemVals)} attributes")
        
         # Get into DataFrame table form indexed by timestamp 
-        df=convertToEntities(elemVals,self.date_field,DEVICE_ATTR)
+        df=convertToEntities(elemVals,self.date_field,DEVICE_ATTR,logger=self.logger)
 
         # Extract the highest sequence number
         max_timestamp=df[self.date_field].max()
-        logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
+        self.logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
 
         # Map column names
-        iotf_utils.renameToDBColumns(df,entity_meta_dict)
+        iotf_utils.renameToDBColumns(df,entity_meta_dict,logger=self.logger)
 
         # Store the df
         self.storePreload(db,entity_meta_dict,df,OSI_PI_EVENT,[self.date_field])
 
-        # update sequence number, use global constant
-        self.updateLastSeq(db,str(max_timestamp))
+        # update sequence number with iso formatted timestamp, use global constant
+        self.updateLastSeq(db,max_timestamp.replace(tzinfo=None).isoformat())
 
         return True
 
@@ -187,12 +181,6 @@ class PhGOSIPIPointsPreload(func_base.PhGCommonPreload):
         ]
         return (inputs, outputs)
 
-    @classmethod
-    def get_module_files(cls,pattern):
-        module_path=os.path.dirname(importlib.import_module(cls.__module__).__file__)
-        logger.debug(f"module_path={module_path}")
-        return [f for f in os.listdir(module_path) if fnmatch.fnmatch(f,pattern)],module_path
-
     def preload(self,entity_type,db,table,entityMetaDict,params,entity_meta_dict,last_seq):
         """
             Implement the preload code for OSIPi Points API
@@ -209,22 +197,22 @@ class PhGOSIPIPointsPreload(func_base.PhGCommonPreload):
         from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiPoints,mapPointValues,convertToEntities
     
         # Get the specified Points attributes fields from OSIServer
-        ptVals=getOSIPiPoints(self.srvParams,self.name_filter,ATTR_FIELDS)
+        ptVals=getOSIPiPoints(self.srvParams,self.name_filter,ATTR_FIELDS,logger=self.logger)
     
         # If no records, return immediately
         if len(ptVals)==0:
-            logger.warning(f"No messages returned from OSIPi")
+            self.logger.warning(f"No messages returned from OSIPi")
             return False
-        logger.info(f"Retrieved messages for {len(ptVals)} attributes")
+        self.logger.info(f"Retrieved messages for {len(ptVals)} attributes")
         # Map Point values to a flattened version indexed by (deviceID,timestamp)
-        flattened=mapPointValues(ptVals,DEVICE_ATTR,self.points_attr_map)
+        flattened=mapPointValues(ptVals,DEVICE_ATTR,self.points_attr_map,logger=self.logger)
         
         # Get into DataFrame table form indexed by timestamp 
-        df=convertToEntities(flattened,self.date_field,DEVICE_ATTR)
+        df=convertToEntities(flattened,self.date_field,DEVICE_ATTR,logger=self.logger)
 
         # Store the highest sequence number
         max_timestamp=df[self.date_field].max()
-        logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
+        self.logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")
 
         self.storePreload(db,entity_meta_dict,df,OSI_PI_EVENT,[self.date_field])
 
