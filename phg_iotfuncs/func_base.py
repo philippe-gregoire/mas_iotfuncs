@@ -30,10 +30,11 @@ class PhGCommonPreload(BasePreload):
     Takes care of making available the various variables needed to implement 
     preload activities in the preload() method
     """
-    def __init__(self,preload_ok,lastseq_constant,lastseq_type=str):
+    def __init__(self,preload_ok,lastseq_constant,lastseq_type=str,lastseq_init='-1'):
         super().__init__(dummy_items=[], output_item=preload_ok)
         self.lastseq_constant=lastseq_constant
         self.lastseq_type=lastseq_type
+        self.lastseq_init=lastseq_init
 
         self.logger=logging.getLogger(self.__class__.__name__)
 
@@ -67,7 +68,7 @@ class PhGCommonPreload(BasePreload):
         self.logger.debug(pprint.pformat(entity_meta_dict))
 
         # get global constant (Current bug with entity-constant)
-        last_seq=iotf_utils.getConstant(entity_type.db,self.lastseq_constant,'-1',auto_register=True,const_type=self.lastseq_type)
+        last_seq=iotf_utils.getConstant(entity_type.db,self.lastseq_constant,self.lastseq_init,auto_register=True,const_type=self.lastseq_type)
 
         # This class is setup to write to the entity time series table
         table = entity_type.name

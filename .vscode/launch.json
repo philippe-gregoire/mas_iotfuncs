@@ -5,9 +5,7 @@
     "version": "0.2.0",
     "configurations": [
 
-
-
-            {
+        {
             "name": "Python : Monitor info",
             "type": "python",
             "request": "launch",
@@ -85,7 +83,7 @@
             "type": "python",
             "request": "launch",
             "program": "scripts/test_OSIPiPreload.py",
-            "args": ["test","Elements"],
+            "args": ["test","-elements", "-parent_element", "\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor" ],
             "console": "integratedTerminal",
             "justMyCode": false
         },
@@ -94,7 +92,7 @@
             "type": "python",
             "request": "launch",
             "program": "scripts/test_OSIPiPreload.py",
-            "args": ["test","Points"],
+            "args": ["test","-points"],
             "console": "integratedTerminal",
             "justMyCode": false
         },

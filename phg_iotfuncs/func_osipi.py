@@ -36,6 +36,9 @@ DEVICE_ATTR='deviceid'
 
 OSI_PI_EVENT = "OSIPiEvent"
 
+# Initial start time
+OSI_INIT_START_TIME = '-30d'
+
 class PhGOSIElemsPreload(func_base.PhGCommonPreload):
     """
     OSIPIElementsPreload
@@ -47,7 +50,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
                  date_field,
                  parent_element_path,
                  osipi_elements_preload_ok):
-        super().__init__(osipi_elements_preload_ok,'osipi_lastseq_'+parent_element_path.split('\\')[-1].lower(),str)
+        super().__init__(osipi_elements_preload_ok,'osipi_lastseq_'+parent_element_path.split('\\')[-1].lower(),str,OSI_INIT_START_TIME)
 
         import argparse
 
@@ -138,7 +141,7 @@ class PhGOSIPIPointsPreload(func_base.PhGCommonPreload):
     def __init__(self, osipi_host, osipi_port, osipi_user, osipi_pass, 
                  name_filter, points_attr_map, date_field,
                  osipi_preload_ok):
-        super().__init__(osipi_preload_ok,f"osipi_lastseq_{name_filter.lower()}",str)
+        super().__init__(osipi_preload_ok,f"osipi_lastseq_{name_filter.lower()}",str,OSI_INIT_START_TIME)
 
         import argparse
 

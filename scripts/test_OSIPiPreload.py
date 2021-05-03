@@ -118,7 +118,7 @@ def main(argv):
             test(db,db_schema,
                     TargetFunc(
                         args.pihost, args.piport,args.piuser,args.pipass,
-                        args.parent_element_path,args.date_field,
+                        args.date_field,args.parent_element_path,
                         'osipi_elements_preload_ok'))
         elif args.operation=='register':
             script_utils.registerFunction(db,db_schema,TargetFunc)
@@ -197,7 +197,8 @@ def test(db,db_schema,iot_func):
     '''
     ####################################################################################
     try:
-        logger.info(f"Executing test for {iot_func.__name__}")
+        funcName=iot_func.__name__ if '__name__' in iot_func.__dict__ else iot_func.name if 'name' in iot_func.__dict__ else 'Unknown'
+        logger.info(f"Executing test for {funcName}")
         iot_func.execute_local_test(db=db,db_schema=db_schema,to_csv=False)
     except AttributeError as attrErr:
         logger.info(f"{attrErr}")

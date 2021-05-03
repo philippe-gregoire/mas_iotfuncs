@@ -36,6 +36,9 @@ ATTR_FIELD_VAL='Value'
 # List the attributes fields we want to retrieve
 ATTR_FIELDS=[ATTR_FIELD_VAL,ATTR_FIELD_TS]
 
+# The default timestamp delta when no starting timestamp is provided
+DEFAULT_TIME_DELTA='-30d'
+
 TAB='\t' # for use in f-strings
 
 def plog(msg,level=logging.DEBUG,logger=logger):
@@ -216,7 +219,7 @@ def getParentElements(piSrvParams,parentElementPath,logger=logger):
 def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr,startTime=None,logger=logger):
     r_elements=getParentElements(piSrvParams, parentElementPath,logger=logger)
 
-    # We want to generate a dict indexed by (ts,deviceId)
+    # We will generate a dict indexed by (ts,deviceId)
     sensorValues={}
     for sensor in r_elements['Items']:
         deviceId=sensor['Name']
@@ -228,18 +231,28 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr,start
                 startTime=startTime.replace(tzinfo=None).isoformat()
         else:
             # Get all recorded values from 30 days back
-            startTime='-30d'
+            startTime=DEFAULT_TIME_DELTA
         # Note that we swap end and start time to get the newest data items first
+        # see https://piUser:piPass@piHost/PIWebAPI/help/controllers/streamset/actions/getrecorded
         r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?boundaryType=Outside&startTime=*&endTime={startTime}&selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}",logger=logger)
         plog(r_data,logger=logger)
+        # Iterate over the Items returned by OSIPi API
         for d in r_data['Items']:
+            # Extract the name of the attribute
             attr_name=d['Name']
             #attr_type=d['PointType']
+            # Attribute has a list of values in the form of an array of {"Timestamp": ts, "Value": float}
             for item in d['Items']:
+                # Get the timestamp for this value
                 ts=item[ATTR_FIELD_TS]
+                # If this timestamp for this deviceid has never been seen, initialize it to {"TimeStamp":ts, "DeviceId": id}
                 if (ts,deviceId) not in sensorValues:
                     sensorValues[(ts,deviceId)]={ATTR_FIELD_TS:ts, deviceAttr:deviceId}
-                sensorValues[(ts,deviceId)][attr_name]=item[ATTR_FIELD_VAL]
+                # Add the value for this attribute to this (ts,deviceid) entry
+                # Note: we now filter out entries that are of type dict
+                attr_value=item[ATTR_FIELD_VAL]
+                if not isinstance(attr_value,dict):
+                    sensorValues[(ts,deviceId)][attr_name]=item[ATTR_FIELD_VAL]
 
     return sensorValues
 
