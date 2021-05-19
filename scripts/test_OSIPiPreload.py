@@ -132,7 +132,7 @@ def main(argv):
                 return
 
             # Fetch the Elements from OSIPi Server.
-            elemVals=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
+            elemVals,_=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
 
             # Get into DataFrame table form indexed by timestamp 
             df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
@@ -164,7 +164,7 @@ def main(argv):
             from phg_iotfuncs.func_osipi import DEVICE_ATTR
 
             # Fetch the Elements from OSIPi Server.
-            elemVals=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
+            elemVals,_=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
 
             # Get into DataFrame table form indexed by timestamp 
             df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)

@@ -122,6 +122,10 @@ def entity_main(argv,def_entity_name,def_ts_column,columns,column_type=sqlalchem
     createEntity(db,db_schema,args.entity_name,columns,column_type)
 
 def load_creds_file(refPath,prefix):
+    ''' Load credentials as JSON from a credentials file 
+        refPath: The reference path in which to locate the credentials.
+        prefix: The credentials prefix
+    '''
     creds_file=default_creds_file(refPath,prefix)
     if not os.path.exists(creds_file):
         print(f"Cannot find {creds_file} file")

@@ -5,6 +5,7 @@
     "version": "0.2.0",
     "configurations": [
 
+
         {
             "name": "Python : Monitor info",
             "type": "python",
@@ -28,7 +29,7 @@
             "type": "python",
             "request": "launch",
             "program": "scripts/TestOSIPIAPI.py",
-            "args": ["test","-elements", "-parent_element", "\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor", "-to_csv"],
+            "args": ["test","-elements", "-parent_element", "\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor", "-to_csv","-to_json"],
             "console": "integratedTerminal",
             "justMyCode": false
         },

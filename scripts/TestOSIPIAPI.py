@@ -47,20 +47,19 @@ def testElementsAPI(args):
     from phg_iotfuncs.func_osipi import DEVICE_ATTR
 
      # Fetch the Elements from OSIPi Server.
-    elemVals=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
+    elemVals,rawElemsJSON=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR,startTime=args.startTime)
 
     # Get into DataFrame table form indexed by timestamp 
     df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
-    print(df.head())
-
     max_timestamp=df[args.date_field].max()
-    logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)} {max_timestamp.timestamp()} {int(max_timestamp.timestamp()/1000)}")
-    return df
+    logger.info(f"Read {len(df)} rows, timestamp from {df[args.date_field].min().isoformat()} to {df[args.date_field].max().isoformat()} ")
+
+    return df,rawElemsJSON
 
 def main(argv):
-    import os
+    import os,io
     import argparse
-    from pprint import pprint
+    from pprint import pprint,pformat
     import urllib3
 
     sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__),'..')))
@@ -74,7 +73,9 @@ def main(argv):
     parser.add_argument('operation',help=f"Operation to perform",choices=['list','test'])
     parser.add_argument('-attributes',help='Dump attributes',action='store_true')
     parser.add_argument('-to_csv',help='Dump dataframe to CSV file',action='store_true')
+    parser.add_argument('-to_json',help='Dump raw data JSON file',action='store_true')
     parser.add_argument('-pathprefix',help='List Elements with this prefix only',default=None)
+    parser.add_argument('-startTime',help='Start time',default=None)
 
     addOSIPiArgs(argv[0],'credentials_osipi',parser)
     args=parser.parse_args(argv[1:])
@@ -94,14 +95,20 @@ def main(argv):
         if args.points:
             df=testPointsAPI(args)
         elif args.elements:
-            df=testElementsAPI(args)
+            df,rawElemsJSON=testElementsAPI(args)
         else:
             print(f"No test specified, use one of -points or -elements")
 
+        max_ts=df[args.date_field].max().strftime('%Y-%m-%d_%H-%M-%S_%f')
+        outFile=os.path.abspath(f"TESTOSIPI_{'Points' if args.points else 'Elements'}_{max_ts}")
         if args.to_csv and df is not None:
-            csvFile=f"TESTOSIPI_{'Points' if args.points else 'Elements'}.csv"
-            logger.info(f"Writing dataframe to {csvFile}")
-            df.to_csv(csvFile)
+            logger.info(f"Writing dataframe to {outFile}.csv")
+            df.to_csv(f"{outFile}.csv")
+        if args.to_json and rawElemsJSON is not None:
+            logger.info(f"Writing ram JSON to {outFile}.json")
+            with io.open(f"{outFile}.json",'w') as f:
+                f.write(pformat(rawElemsJSON))
+
 
 if __name__=='__main__':
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)

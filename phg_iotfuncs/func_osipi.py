@@ -105,7 +105,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
     
         # Get the specified Points attributes fields from OSIServer
-        elemVals=getOSIPiElements(self.srvParams,self.parent_element_path,ATTR_FIELDS,DEVICE_ATTR,startTime=last_seq,logger=self.logger)
+        elemVals,_=getOSIPiElements(self.srvParams,self.parent_element_path,ATTR_FIELDS,DEVICE_ATTR,startTime=last_seq,logger=self.logger)
 
         # If no records, return immediately
         if len(elemVals)==0:

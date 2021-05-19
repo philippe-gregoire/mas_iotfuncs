@@ -57,7 +57,8 @@ def getFromPi(srvParams,url=None,pipath=None,logger=logger):
     hdr={'Authorization': f"Basic {base64.encodebytes(auth.encode())[:-1].decode()}"}
     piurl=url if url else f"https://{srvParams.pihost}:{srvParams.piport}/piwebapi"
     if pipath: piurl=f"{piurl}/{pipath}"
-    logger.debug(f"Invoking {piurl}")
+    dQ='"'
+    logger.info(f"Curl equivalent: CURL -k -X GET {' '.join(['-H '+dQ+h+':'+v+dQ for h,v in hdr.items()])} \"{piurl}\"")
     resp=requests.request('GET',piurl,verify=False,headers=hdr) # cert=args.picert,
     if not resp.ok:
         resp.reason
@@ -217,25 +218,42 @@ def getParentElements(piSrvParams,parentElementPath,logger=logger):
     return None
 
 def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr,startTime=None,logger=logger):
+    ''' Returns a dictionary indexed by (timestamp,deviceid) and the raw json output from the API '''
     r_elements=getParentElements(piSrvParams, parentElementPath,logger=logger)
 
     # We will generate a dict indexed by (ts,deviceId)
     sensorValues={}
+    if startTime:
+        import datetime
+        # Format expected by OSIPi API: 2021-04-27T07:29:16.3108215Z, e.g. ISO Format
+        if isinstance(startTime,datetime.datetime):
+            startTime=startTime.replace(tzinfo=None).isoformat()
+        else:
+            # attempt to parse date
+            try:
+                startTime=datetime.date.fromisoformat(startTime)
+            except Exception:
+                logger.info(f"{startTime} could not be parsed to ISO {datetime.datetime.now().isoformat()}")
+    else:
+        # Do not specify a startTime
+        pass
+        # Get all recorded values from 30 days back
+        #startTime=DEFAULT_TIME_DELTA
+    logger.info(f"Using startTime={startTime}")
+
+    OSIPiRawData={}
+
     for sensor in r_elements['Items']:
         deviceId=sensor['Name']
         #r_data=getFromPi(piSrvParams,sensor['Links']['RecordedData'],logger=logger)
-        if startTime:
-            import datetime
-            # Format expected by OSIPi API: 2021-04-27T07:29:16.3108215Z, e.g. ISO Format
-            if isinstance(startTime,datetime.datetime):
-                startTime=startTime.replace(tzinfo=None).isoformat()
-        else:
-            # Get all recorded values from 30 days back
-            startTime=DEFAULT_TIME_DELTA
         # Note that we swap end and start time to get the newest data items first
         # see https://piUser:piPass@piHost/PIWebAPI/help/controllers/streamset/actions/getrecorded
-        r_data=getFromPi(piSrvParams,f"{sensor['Links']['RecordedData']}?boundaryType=Outside&startTime=*&endTime={startTime}&selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}",logger=logger)
+        piurl=f"{sensor['Links']['RecordedData']}?selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}"
+        if startTime:
+            piurl+=f"&boundaryType=Outside&startTime={startTime}"
+        r_data=getFromPi(piSrvParams,piurl,logger=logger)
         plog(r_data,logger=logger)
+        OSIPiRawData[deviceId]=r_data['Items']
         # Iterate over the Items returned by OSIPi API
         for d in r_data['Items']:
             # Extract the name of the attribute
@@ -243,18 +261,18 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr,start
             #attr_type=d['PointType']
             # Attribute has a list of values in the form of an array of {"Timestamp": ts, "Value": float}
             for item in d['Items']:
-                # Get the timestamp for this value
+                # Get the timestamp and value for this attribute
                 ts=item[ATTR_FIELD_TS]
-                # If this timestamp for this deviceid has never been seen, initialize it to {"TimeStamp":ts, "DeviceId": id}
-                if (ts,deviceId) not in sensorValues:
-                    sensorValues[(ts,deviceId)]={ATTR_FIELD_TS:ts, deviceAttr:deviceId}
-                # Add the value for this attribute to this (ts,deviceid) entry
-                # Note: we now filter out entries that are of type dict
                 attr_value=item[ATTR_FIELD_VAL]
+                # Note: filter out entries that are of type dict and 
                 if not isinstance(attr_value,dict):
+                    # If this timestamp for this deviceid has never been seen, initialize it to {"TimeStamp":ts, "DeviceId": id}
+                    if (ts,deviceId) not in sensorValues:
+                        sensorValues[(ts,deviceId)]={ATTR_FIELD_TS:ts, deviceAttr:deviceId}
+                    # Add the value for this attribute to this (ts,deviceid) entry
                     sensorValues[(ts,deviceId)][attr_name]=item[ATTR_FIELD_VAL]
 
-    return sensorValues
+    return sensorValues,OSIPiRawData
 
 def convertToEntities(flattened,entity_date_field,deviceAttr,logger=logger):
     """
@@ -283,7 +301,7 @@ def convertToEntities(flattened,entity_date_field,deviceAttr,logger=logger):
     # Set the Date/Timestamp column to the Entity's timestamp column name
     df.rename(columns={ts_index_col:entity_date_field},inplace=True)
 
-    # Adjust column names, set updated_utc to current ts
+    # Adjust column names, set updated_utc to data item timestamp
     df['updated_utc']=df[entity_date_field]
 
     return df
