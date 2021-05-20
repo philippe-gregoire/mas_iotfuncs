@@ -16,12 +16,14 @@
 import os, io, json, importlib, fnmatch
 import logging,pprint
 
-from iotfunctions.base import BaseTransformer, BaseDataSource, BasePreload
+from iotfunctions.base import BaseTransformer, BaseDataSource, BasePreload, BaseFilter
 import iotfunctions.db
 
 from phg_iotfuncs import iotf_utils
 
 logger = logging.getLogger(__name__)
+
+PACKAGE_URL = f"git+https://github.com/philippe-gregoire/mas_iotfuncs@master"
 
 class PhGCommonPreload(BasePreload):
     """
@@ -99,3 +101,32 @@ class PhGCommonPreload(BasePreload):
         self.logger.debug(f"Wrote {len(df.index)} rows to table {entity_meta_dict['schemaName']}.{entity_meta_dict['metricsTableName']}")
 
         return True
+
+class PhGFilterMultiplicates(BaseFilter):
+    """
+    Filters out multiplicate consecutive rows (rows with same values but different timestamps)
+    """
+
+    def __init__(self, timestamp_column, keep_timestamp, filter_set=None):
+        super().__init__(dependent_items=keep_timestamp, output_item=filter_set)
+        self.timestamp_column = timestamp_column
+        self.keep_timestamp = keep_timestamp
+        self.filter_set = filter_set
+
+    def filter(self, df):
+        # Implement the logic
+        logger.info(f"Got dataframe of len={len(df)}")
+        logger.info(f"columns= {', '.join([c for c in df.columns])}")
+        logger.info(df.describe(include='all'))
+        # df = df[df[self.company_code] == self.company]
+        return df
+
+    @classmethod
+    def build_ui(cls):
+        from iotfunctions import ui
+        import datetime
+        # define arguments that behave as function inputs
+        inputs = []
+        inputs.append(ui.UISingleItem(name='timestamp_column', datatype=datetime.datetime))
+        inputs.append(ui.UIMulti(name='keep_timestamp', datatype=str, values=['min', 'mean', 'max']))
+        return (inputs, [ui.UIStatusFlag('filter_set')])
