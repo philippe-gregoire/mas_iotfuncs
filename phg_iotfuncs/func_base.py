@@ -134,7 +134,7 @@ class PhGFilterMultiplicates(BaseFilter):
         from iotfunctions import ui
         import datetime
         # define arguments that behave as function inputs
-        inputs = [ #ui.UIMultiItem(name='drop_if_NaN', datatype=float),
+        inputs = [ui.UIMultiItem(name='drop_if_NaN', datatype=float),
                   ui.UISingleItem(name='timestamp_column', datatype=datetime.datetime),
                   ui.UIMulti(name='keep_timestamp', datatype=str, values=['min', 'mean', 'max'])]
         return (inputs, [ui.UIStatusFlag('filter_set')])
