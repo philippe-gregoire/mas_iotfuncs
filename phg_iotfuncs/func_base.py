@@ -125,8 +125,12 @@ class PhGFilterMultiplicates(BaseFilter):
         import math
         drop_if_NaN = self.drop_if_NaN
         # drop_if_NaN = [f"Order{o}_fft{f}" for o in (1,2,3) for f in ('V','G')]
+        logger.info(f"Dropping rows if any of {drop_if_NaN} is NaN")
         df=df[df[drop_if_NaN].apply(lambda row: all([not math.isnan(c) for c in row]),axis=1)]
 
+        logger.info(f"Now having retained {len(df)} rows")
+        logger.info(df.describe(include='all'))
+        
         return df
 
     @classmethod
