@@ -119,6 +119,15 @@ class PhGFilterMultiplicates(BaseFilter):
         logger.info(f"columns= {', '.join([c for c in df.columns])}")
         logger.info(df.describe(include='all'))
         # df = df[df[self.company_code] == self.company]
+        # df is index by (id,date)
+        dump_len=min(200,len(df)/2)
+        logger.info('>>>> =====================================')
+        logger.info(df[:dump_len].to_csv())
+        logger.info('>>>> =====================================')
+        logger.info(df[:-dump_len].to_csv())
+        logger.info('>>>> =====================================')
+        # Capture the df as CSV here
+
         return df
 
     @classmethod

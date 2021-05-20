@@ -53,7 +53,7 @@ def main(argv):
         rc=db.unregister_functions(['PhGFilterMultiplicates'])
         print(f"unregistering function rc={rc}")
     else:
-        print(f"Unknown option {args.operation}")
+        print(f"Unknown operation {args.operation}")
 
 def test(db,db_schema,iot_func,timestamp_col,depenkeep_timestamp):
     ''' Test the PhGFilterMultiplicates function
