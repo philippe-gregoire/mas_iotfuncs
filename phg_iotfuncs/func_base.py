@@ -107,9 +107,10 @@ class PhGFilterMultiplicates(BaseFilter):
     Filters out multiplicate consecutive rows (rows with same values but different timestamps)
     """
 
-    def __init__(self, timestamp_column, keep_timestamp, filter_set=None):
+    def __init__(self, drop_if_NaN, timestamp_column, keep_timestamp, filter_set=None):
         super().__init__(dependent_items=keep_timestamp, output_item=filter_set)
         self.timestamp_column = timestamp_column
+        self.drop_if_NaN = drop_if_NaN
         self.keep_timestamp = keep_timestamp
         self.filter_set = filter_set
 
@@ -118,15 +119,13 @@ class PhGFilterMultiplicates(BaseFilter):
         logger.info(f"Got dataframe of len={len(df)}")
         logger.info(f"columns= {', '.join([c for c in df.columns])}")
         logger.info(df.describe(include='all'))
-        # df = df[df[self.company_code] == self.company]
-        # df is index by (id,date)
-        dump_len=min(200,len(df)/2)
-        logger.info('>>>> =====================================')
-        logger.info(df[:dump_len].to_csv())
-        logger.info('>>>> =====================================')
-        logger.info(df[:-dump_len].to_csv())
-        logger.info('>>>> =====================================')
-        # Capture the df as CSV here
+        # df is indexed by (id,date)
+
+        # drop the rows for which not all the Order[1-3]_fftV|G are non-NaN
+        import math
+        drop_if_NaN = self.drop_if_NaN
+        # drop_if_NaN = [f"Order{o}_fft{f}" for o in (1,2,3) for f in ('V','G')]
+        df=df[df[drop_if_NaN].apply(lambda row: all([not math.isnan(c) for c in row]),axis=1)]
 
         return df
 
@@ -135,7 +134,7 @@ class PhGFilterMultiplicates(BaseFilter):
         from iotfunctions import ui
         import datetime
         # define arguments that behave as function inputs
-        inputs = []
-        inputs.append(ui.UISingleItem(name='timestamp_column', datatype=datetime.datetime))
-        inputs.append(ui.UIMulti(name='keep_timestamp', datatype=str, values=['min', 'mean', 'max']))
+        inputs = [ #ui.UIMultiItem(name='drop_if_NaN', datatype=float),
+                  ui.UISingleItem(name='timestamp_column', datatype=datetime.datetime),
+                  ui.UIMulti(name='keep_timestamp', datatype=str, values=['min', 'mean', 'max'])]
         return (inputs, [ui.UIStatusFlag('filter_set')])

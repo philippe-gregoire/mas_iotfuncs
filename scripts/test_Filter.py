@@ -31,6 +31,7 @@ def main(argv):
     import argparse
     parser = argparse.ArgumentParser(description=f"Tester for PredictSKLearn iotfunction")
     parser.add_argument('operation', type=str, help=f"Operation to perform. Local test, register function, store the filter function", choices=['test','register'], default='test')
+    parser.add_argument('-drop_if_NaN', type=str, help=f"Model file to store", action='append',nargs='*')
     parser.add_argument('-timestamp_col', type=str, help=f"Model file to store", default='')
     parser.add_argument('-keep_timestamp', type=str, help=f"Model path in COS", default='')
     script_utils.add_common_args(parser,argv)
@@ -46,16 +47,17 @@ def main(argv):
     import phg_iotfuncs.func_base
     iotFunc=phg_iotfuncs.func_base.PhGFilterMultiplicates
     if args.operation=='test':
-        test(db,db_schema,iotFunc,args.timestamp_col, args.keep_timestamp)
+        test(db,db_schema,iotFunc,args.drop_if_NaN,args.timestamp_col, args.keep_timestamp)
+        # test(db,db_schema,iotFunc,args.drop_if_NaN,args.timestamp_col, args.keep_timestamp)
     elif args.operation=='register':
         script_utils.registerFunction(db,db_schema,iotFunc)
     elif args.operation=='unregfunc':
         rc=db.unregister_functions(['PhGFilterMultiplicates'])
         print(f"unregistering function rc={rc}")
     else:
-        print(f"Unknown operation {args.operation}")
+        print(f"Unknown option {args.operation}")
 
-def test(db,db_schema,iot_func,timestamp_col,depenkeep_timestamp):
+def test(db,db_schema,iot_func,drop_if_NaN,*vars):
     ''' Test the PhGFilterMultiplicates function
 
     Import and instantiate the functions to be tested
@@ -74,7 +76,7 @@ def test(db,db_schema,iot_func,timestamp_col,depenkeep_timestamp):
     ####################################################################################
 
     try:
-        fn = iot_func(timestamp_col,depenkeep_timestamp)
+        fn = iot_func(drop_if_NaN,*vars)
         fn.execute_local_test(db=db,db_schema=db_schema)
     except AttributeError as attrErr:
         logger.info(f"{attrErr}")
