@@ -42,7 +42,11 @@ OSI_INIT_START_TIME = '-30d'
 class PhGOSIElemsPreload(func_base.PhGCommonPreload):
     """
     OSIPIElementsPreload
-    Do an OSI Pi Server read as a preload activity. Load results into the Entity Type time series table.
+
+    Do an OSI Pi Server read as a preload activity.
+    Load results into the Entity Type time series table.
+
+    Can use interpolated data from OSIPi
     """
 
     def __init__(self,
