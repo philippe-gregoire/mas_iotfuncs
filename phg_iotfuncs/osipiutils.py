@@ -247,15 +247,14 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceField,star
         else:
             # attempt to parse date
             try:
-                startTime=dt.date.fromisoformat(startTime)
+                # We keep only the isotime format length
+                startTime=dt.datetime.fromisoformat(str(startTime)[:len(dt.datetime.now().isoformat())])
             except Exception:
                 logger.info(f"{startTime} could not be parsed to ISO {dt.datetime.now().isoformat()}")
     else:
-        # Do not specify a startTime
+        # Do not specify a startTime, this will get all recorded values from 30 days back
         pass
-        # Get all recorded values from 30 days back
         #startTime=DEFAULT_TIME_DELTA
-    logger.info(f"Using startTime={startTime}")
 
     OSIPiRawData={}
 
@@ -273,7 +272,8 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceField,star
             piurl+=f"&interval={interval}"
             # We want to have second-aligned start times, truncate start_time's microseconds
             if startTime is not None:
-                startTime=startTime.replace(microsecond=0)
+                if isinstance(startTime,dt.datetime):
+                    startTime=startTime.replace(microsecond=0)
             else:
                 # use an startTime that's 1000 times the interval, to avoid error 400 from the API
                 if interval.endswith('ms'):
@@ -286,7 +286,8 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceField,star
                     startTime=dt.datetime.utcnow()-dt.timedelta(hours=int(interval[:-1]))*1000
 
         if startTime is not None:
-            piurl+=f"&boundaryType=Outside&startTime={startTime}"
+            # If the startTime is not a datetime.datetime at this stage, use as plain string repr, else us isoformat 
+            piurl+=f"&boundaryType=Outside&startTime={startTime.isoformat() if isinstance(startTime,dt.datetime) else startTime}"
         r_data=getFromPi(piSrvParams,piurl,logger=logger)
         plog(r_data,logger=logger)
         OSIPiRawData[deviceId]=r_data['Items']
