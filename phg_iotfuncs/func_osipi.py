@@ -49,6 +49,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
                  osipi_host, osipi_port, osipi_user, osipi_pass, 
                  date_field,
                  parent_element_path,
+                 interval,
                  osipi_elements_preload_ok):
         super().__init__(osipi_elements_preload_ok,'osipi_lastseq_'+parent_element_path.split('\\')[-1].lower(),str,OSI_INIT_START_TIME)
 
@@ -59,8 +60,9 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         self.osipi_port = osipi_port
         self.osipi_user = osipi_user
         self.osipi_pass = osipi_pass
-        self.parent_element_path = parent_element_path
         self.date_field=date_field.strip()
+        self.parent_element_path = parent_element_path
+        self.interval=interval if (interval is not None and interval is not '') else None
 
         self.osipi_elements_preload_ok=osipi_elements_preload_ok
 
@@ -80,7 +82,8 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
             ui.UISingle(required=True, datatype=str, name='osipi_user', description='OSIPi server userid'),
             ui.UISingle(required=True, datatype=str, name='osipi_pass', description='OSIPi server password'),
             ui.UISingle(required=True, datatype=str, name='date_field', description='Field in the incoming JSON for event date (timestamp)', default='date'),
-            ui.UISingle(required=True, datatype=str, name='parent_element_path', description='OSIPi Parent Element Path')
+            ui.UISingle(required=True, datatype=str, name='parent_element_path', description='OSIPi Parent Element Path'),
+            ui.UISingle(required=True, datatype=str, name='interval', description='Interpolation interval e.g. 10s, 1h, or blank for recorded data only')
         ]
 
         # define arguments that behave as function outputs
@@ -106,7 +109,7 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         # Get the specified Points attributes fields from OSIServer
         attrFields=[osipiutils.ATTR_FIELD_VAL,osipiutils.ATTR_FIELD_TS]
         from phg_iotfuncs import osipiutils
-        elemVals,_=osipiutils.getOSIPiElements(self.srvParams,self.parent_element_path,attrFields,DEVICE_ATTR,startTime=last_seq,logger=self.logger)
+        elemVals,_=osipiutils.getOSIPiElements(self.srvParams,self.parent_element_path,attrFields,DEVICE_ATTR,startTime=last_seq,interval=self.interval,logger=self.logger)
 
         # If no records, return immediately
         if len(elemVals)==0:

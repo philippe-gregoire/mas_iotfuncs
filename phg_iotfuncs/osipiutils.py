@@ -55,7 +55,7 @@ def getFromPi(srvParams,url=None,pipath=None,logger=logger):
     piurl=url if url else f"https://{srvParams.pihost}:{srvParams.piport}/piwebapi"
     if pipath: piurl=f"{piurl}/{pipath}"
     dQ='"'
-    logger.info(f"Curl equivalent: CURL -k -X GET {' '.join(['-H '+dQ+h+':'+v+dQ for h,v in hdr.items()])} \"{piurl}\"")
+    logger.info(f"Curl equivalent: curl -k -X GET {' '.join(['-H '+dQ+h+':'+v+dQ for h,v in hdr.items()])} \"{piurl}\"")
     resp=requests.request('GET',piurl,verify=False,headers=hdr) # cert=args.picert,
     if not resp.ok:
         resp.reason
@@ -234,21 +234,22 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceField,star
         logger:
             a logger to use for tracing
     """
+    import datetime as dt
+
     r_elements=getParentElements(piSrvParams, parentElementPath,logger=logger)
 
     # We will generate a dict indexed by (ts,deviceId)
     sensorValues={}
     if startTime:
-        import datetime
         # Format expected by OSIPi API: 2021-04-27T07:29:16.3108215Z, e.g. ISO Format
-        if isinstance(startTime,datetime.datetime):
+        if isinstance(startTime,dt.datetime):
             startTime=startTime.replace(tzinfo=None).isoformat()
         else:
             # attempt to parse date
             try:
-                startTime=datetime.date.fromisoformat(startTime)
+                startTime=dt.date.fromisoformat(startTime)
             except Exception:
-                logger.info(f"{startTime} could not be parsed to ISO {datetime.datetime.now().isoformat()}")
+                logger.info(f"{startTime} could not be parsed to ISO {dt.datetime.now().isoformat()}")
     else:
         # Do not specify a startTime
         pass
@@ -270,6 +271,20 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceField,star
         piurl+=f"?selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}"
         if interval is not None:
             piurl+=f"&interval={interval}"
+            # We want to have second-aligned start times, truncate start_time's microseconds
+            if startTime is not None:
+                startTime=startTime.replace(microsecond=0)
+            else:
+                # use an startTime that's 1000 times the interval, to avoid error 400 from the API
+                if interval.endswith('ms'):
+                    startTime=dt.datetime.utcnow()-dt.timedelta(milliseconds=int(interval[:-2]))*1000
+                elif interval.endswith('s'):
+                    startTime=dt.datetime.utcnow()-dt.timedelta(seconds=int(interval[:-1]))*1000
+                elif interval.endswith('m'):
+                    startTime=dt.datetime.utcnow()-dt.timedelta(minutes=int(interval[:-1]))*1000
+                elif interval.endswith('h'):
+                    startTime=dt.datetime.utcnow()-dt.timedelta(hours=int(interval[:-1]))*1000
+
         if startTime is not None:
             piurl+=f"&boundaryType=Outside&startTime={startTime}"
         r_data=getFromPi(piSrvParams,piurl,logger=logger)

@@ -48,7 +48,7 @@ def testElementsAPI(args):
 
     # Fetch the Elements from OSIPi Server.
     attrFields=[osipiutils.ATTR_FIELD_VAL,osipiutils.ATTR_FIELD_TS]
-    elemVals,rawElemsJSON=osipiutils.getOSIPiElements(args,args.parent_element_path,attrFields,func_osipi.DEVICE_ATTR,startTime=args.startTime)
+    elemVals,rawElemsJSON=osipiutils.getOSIPiElements(args,args.parent_element_path,attrFields,func_osipi.DEVICE_ATTR,startTime=args.startTime,interval=args.interval)
 
     # Get into DataFrame table form indexed by timestamp 
     df=osipiutils.convertToEntities(elemVals,args.date_field,func_osipi.DEVICE_ATTR)
@@ -77,6 +77,7 @@ def main(argv):
     parser.add_argument('-to_json',help='Dump raw data JSON file',action='store_true')
     parser.add_argument('-pathprefix',help='List Elements with this prefix only',default=None)
     parser.add_argument('-startTime',help='Start time',default=None)
+    parser.add_argument('-interval',help='Interpolation interval (1s, 10s, 1h, 1m)',default=None)
 
     test_OSIPiPreload.addOSIPiArgs(argv[0],'credentials_osipi',parser)
     args=parser.parse_args(argv[1:])

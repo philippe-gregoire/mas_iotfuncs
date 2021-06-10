@@ -33,6 +33,15 @@
             "justMyCode": false
         },
         {
+            "name": "Python : OSIPIAPI Test Elements interpolated 10s",
+            "type": "python",
+            "request": "launch",
+            "program": "scripts/TestOSIPIAPI.py",
+            "args": ["test","-elements", "-parent_element", "\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor", "-to_csv","-to_json","-interval","10s"],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Python : OSIPIAPI Test Elements",
             "type": "python",
             "request": "launch",
