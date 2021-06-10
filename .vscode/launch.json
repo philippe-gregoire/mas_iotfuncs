@@ -73,7 +73,7 @@
             "type": "python",
             "request": "launch",
             "program": "scripts/test_OSIPiPreload.py",
-            "args": ["create","-elements","-parent_element","\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor","-entity_type","Bearing"],
+            "args": ["create","-elements","-parent_element","\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\Motor","-entity_type","Bearing","date_field","date","interval","10s"],
             "console": "integratedTerminal",
             "justMyCode": false
         },
