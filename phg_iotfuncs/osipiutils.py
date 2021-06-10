@@ -33,8 +33,6 @@ OSIPI_TYPES_MAP={
 ATTR_FIELD_TS='Timestamp'
 # Name of the field holding an attribute's value
 ATTR_FIELD_VAL='Value'
-# List the attributes fields we want to retrieve
-ATTR_FIELDS=[ATTR_FIELD_VAL,ATTR_FIELD_TS]
 
 # The default timestamp delta when no starting timestamp is provided
 DEFAULT_TIME_DELTA='-30d'
@@ -49,7 +47,6 @@ def plog(msg,level=logging.DEBUG,logger=logger):
 def getFromPi(srvParams,url=None,pipath=None,logger=logger):
     ''' Issue a GET request to OSPi API
         srvParams has attributes pihost, piport, piuser, pipass
-
     '''
     import requests, base64
 
@@ -210,15 +207,33 @@ def getParentElements(piSrvParams,parentElementPath,logger=logger):
     #r_elements=getFromPi(piSrvParams,r_elements['Items'][0]['Links']['Elements'])
     for element in r_elements['Items']:
         if element['Path']==parentElementPath:
-            r_elements=getFromPi(piSrvParams,f"{element['Links']['Elements']}?selectedFields=Items.Name;Items.Links.RecordedData",logger=logger)
+            r_elements=getFromPi(piSrvParams,f"{element['Links']['Elements']}?selectedFields=Items.Name;Items.Links.RecordedData;Items.Links.InterpolatedData",logger=logger)
             plog(r_elements,logger=logger)
 
             return r_elements
     
     return None
 
-def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr,startTime=None,logger=logger):
-    ''' Returns a dictionary indexed by (timestamp,deviceid) and the raw json output from the API '''
+def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceField,startTime=None,interval=None,logger=logger):
+    """ Returns a dictionary indexed by (timestamp,deviceid) and the raw json output from the API
+
+        Parameters
+        ==========
+        PiSrvParams:
+            Dictionary of pi server connectivity
+        parentElementPath:
+            Path from which to get elements
+        valueFields:
+            Array of fields to retrieve
+        deviceField:
+            Attribute field containing the device IS
+        startTime:
+            Starting timestamp
+        interval:
+            interpolation interval (e.g. '1h', '10s', '1m'). If None, use recorded Data
+        logger:
+            a logger to use for tracing
+    """
     r_elements=getParentElements(piSrvParams, parentElementPath,logger=logger)
 
     # We will generate a dict indexed by (ts,deviceId)
@@ -245,11 +260,17 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr,start
 
     for sensor in r_elements['Items']:
         deviceId=sensor['Name']
-        #r_data=getFromPi(piSrvParams,sensor['Links']['RecordedData'],logger=logger)
+        # Select the API URL depending on interpolated or not method
+        # use interpolated data
+        # see https://192.168.63.39/PIWebAPI/help/controllers/stream/actions/getinterpolated
         # Note that we swap end and start time to get the newest data items first
         # see https://piUser:piPass@piHost/PIWebAPI/help/controllers/streamset/actions/getrecorded
-        piurl=f"{sensor['Links']['RecordedData']}?selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}"
-        if startTime:
+        piurl=sensor['Links']['InterpolatedData' if interval else 'RecordedData']
+        # Select appropriate fields
+        piurl+=f"?selectedFields=Items.Name;Items.PointType;{selectedFields(valueFields,'Items.Items')}"
+        if interval is not None:
+            piurl+=f"&interval={interval}"
+        if startTime is not None:
             piurl+=f"&boundaryType=Outside&startTime={startTime}"
         r_data=getFromPi(piSrvParams,piurl,logger=logger)
         plog(r_data,logger=logger)
@@ -268,7 +289,7 @@ def getOSIPiElements(piSrvParams, parentElementPath,valueFields,deviceAttr,start
                 if not isinstance(attr_value,dict):
                     # If this timestamp for this deviceid has never been seen, initialize it to {"TimeStamp":ts, "DeviceId": id}
                     if (ts,deviceId) not in sensorValues:
-                        sensorValues[(ts,deviceId)]={ATTR_FIELD_TS:ts, deviceAttr:deviceId}
+                        sensorValues[(ts,deviceId)]={ATTR_FIELD_TS:ts, deviceField:deviceId}
                     # Add the value for this attribute to this (ts,deviceid) entry
                     sensorValues[(ts,deviceId)][attr_name]=item[ATTR_FIELD_VAL]
 
@@ -281,21 +302,33 @@ def convertToEntities(flattened,entity_date_field,deviceAttr,logger=logger):
     import numpy as np, pandas as pd
     import datetime as dt
 
+    tsAttr=ATTR_FIELD_TS
+
     # We get the messages in an array of dicts, convert to dataframe
     df=pd.DataFrame.from_records([v for v in flattened.values()])
-    logger.debug(f"df initial columns={[c for c in df.columns]}")
+
+    # Get attributes from OSI
+    osiAttrs=[c for c in df.columns]
+    logger.info(f"df initial columns={osiAttrs}")
+
 
     # Find the date column. We know at this stage that the records we keep have a date_field
-    df[ATTR_FIELD_TS]=pd.to_datetime(df[ATTR_FIELD_TS],errors='coerce')
+    if not tsAttr in osiAttrs:
+        logger.warning(f"There is no timestamp column {tsAttr} from the JSON columns")
+    else:
+        df[tsAttr]=pd.to_datetime(df[tsAttr],errors='coerce')
 
     # Adjust device_id to remove special chars
-    df[deviceAttr]=df[deviceAttr].apply(iotf_utils.toMonitorColumnName)
+    if not deviceAttr in osiAttrs:
+        logger.warning(f"There is no device id column {deviceAttr} from the JSON columns")
+    else:
+        df[deviceAttr]=df[deviceAttr].apply(iotf_utils.toMonitorColumnName)
 
     # Adjust columns, add index columns deviceid, rcv_timestamp_utc
     id_index_col=deviceAttr
     ts_index_col='rcv_timestamp_utc'    # Column which holds the timestamp part of the index
-    logger.debug(f"Using columns [{deviceAttr},{ATTR_FIELD_TS}] as index [{id_index_col},{ts_index_col}]")
-    df.rename(columns={ATTR_FIELD_TS:ts_index_col},inplace=True)
+    logger.debug(f"Using columns [{deviceAttr},{tsAttr}] as index [{id_index_col},{ts_index_col}]")
+    df.rename(columns={tsAttr:ts_index_col},inplace=True)
     df.set_index([id_index_col,ts_index_col],drop=False,inplace=True)
 
     # Set the Date/Timestamp column to the Entity's timestamp column name

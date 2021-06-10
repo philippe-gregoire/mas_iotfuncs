@@ -235,3 +235,4 @@ COS/
 **/credentials_*_*json
 *.csv
 *.pem
+**/TESTOSIPI_Elements_*.json

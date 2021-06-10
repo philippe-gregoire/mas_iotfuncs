@@ -36,6 +36,10 @@ def addOSIPiArgs(refPath,credsFile,parser):
     parser.add_argument('-entity_type', type=str, help=f"Entity type name", required=False,default=None)
     parser.add_argument('-date_field', type=str, help=f"Field containing the event date/timestamp", required=False,default='date')
 
+    import phg_iotfuncs.osipiutils
+    parser.add_argument('-osiID',help='OSIPi device Identifier JSON field',default=phg_iotfuncs.osipiutils.ATTR_FIELD_VAL)
+    parser.add_argument('-osiTS',help='OSIPi record timestamp JSON field',default=phg_iotfuncs.osipiutils.ATTR_FIELD_TS)
+
     parser.add_argument('-point_attr_map_file', type=str, help=f"OSIPi Points mapping JSON file name", required=False,default=None)
     parser.add_argument('-points_name_prefix', type=str, help=f"OSIPi Points name prefix", required=False,default=None)
 
@@ -124,18 +128,18 @@ def main(argv):
             script_utils.registerFunction(db,db_schema,TargetFunc)
         elif args.operation=='create':
             # get a data sample to figure out the attributes
-            from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
-            from phg_iotfuncs.func_osipi import DEVICE_ATTR
+            from phg_iotfuncs import osipiutils, func_osipi
 
             if not args.parent_element_path:
                 print(f"-parent_element_path must be specified for operation {args.operation}")
                 return
 
+            attrFields=[osipiutils.ATTR_FIELD_VAL,osipiutils.ATTR_FIELD_TS]
             # Fetch the Elements from OSIPi Server.
-            elemVals,_=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
+            elemVals,_=osipiutils.getOSIPiElements(args,args.parent_element_path,attrFields,func_osipi.DEVICE_ATTR)
 
             # Get into DataFrame table form indexed by timestamp 
-            df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
+            df=osipiutils.convertToEntities(elemVals,args.date_field,func_osipi.DEVICE_ATTR)
             attributes=df.columns
             print(f"Creating entity {entityName} with attributes {attributes}")
             script_utils.createEntity(db,db_schema,entityName,attributes,
@@ -156,18 +160,16 @@ def main(argv):
             from phg_iotfuncs.osipiutils import listOSIPiElements
             listOSIPiElements(args)
         elif args.operation=='osi_dbtest':
-            import iotfunctions
-            from phg_iotfuncs import iotf_utils
-
             # get a data sample to figure out the attributes
-            from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
-            from phg_iotfuncs.func_osipi import DEVICE_ATTR
+            import iotfunctions
+            from  phg_iotfuncs import iotf_utils, osipiutils, func_osipi
 
             # Fetch the Elements from OSIPi Server.
-            elemVals,_=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR)
+            attrFields=[osipiutils.ATTR_FIELD_VAL,osipiutils.ATTR_FIELD_TS]
+            elemVals,_=osipiutils.getOSIPiElements(args,args.parent_element_path,attrFields,func_osipi.DEVICE_ATTR)
 
             # Get into DataFrame table form indexed by timestamp 
-            df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
+            df=osipiutils.convertToEntities(elemVals,args.date_field,func_osipi.DEVICE_ATTR)
             
             entity_type_dict,entity_meta_dict=iotfunctions.metadata.retrieve_entity_type_metadata(_db=db,logical_name=entityName)
             iotf_utils.renameToDBColumns(df,entity_meta_dict)
@@ -206,4 +208,6 @@ def test(db,db_schema,iot_func):
         logger.exception(f"Error executing local test",exc)
 
 if __name__ == "__main__":
+    import logging
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     main(sys.argv)

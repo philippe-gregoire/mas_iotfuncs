@@ -42,6 +42,15 @@
             "justMyCode": false
         },
         {
+            "name": "Python : OSIPIAPI Test Elements AirCompressor",
+            "type": "python",
+            "request": "launch",
+            "program": "scripts/TestOSIPIAPI.py",
+            "args": ["test","-elements", "-parent_element", "\\\\OSISOFT-SERVER\\IBM_FabLab\\FabLab_Paris\\AirCompressor", "-to_csv","-to_json"],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Python : OSIPIAPI List Points",
             "type": "python",
             "request": "launch",

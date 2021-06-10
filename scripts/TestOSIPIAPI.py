@@ -13,6 +13,7 @@
 #
 # Author: Philippe Gregoire - IBM in France
 # *****************************************************************************
+
 import sys,logging,json,io,os
 import script_utils
 
@@ -20,22 +21,22 @@ logger = logging.getLogger(__name__)
 
 def testPointsAPI(args):
     ''' Test the pi Points get function '''
-    from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiPoints,mapPointValues,convertToEntities
-    from phg_iotfuncs.func_osipi import DEVICE_ATTR
+    from phg_iotfuncs import func_osipi,osipiutils
 
     point_attr_map=script_utils.loadJSON(args.point_attr_map_file)
     # with io.open(os.path.join(os.path.dirname(__file__),args.point_attr_map_file)) as f:
     #     point_attr_map=json.load(f)
     
     # Fetch the Points from OSIPi Server.
-    ptVals=getOSIPiPoints(args,args.points_name_prefix,ATTR_FIELDS)
+    attrFields=[osipiutils.ATTR_FIELD_VAL,osipiutils.ATTR_FIELD_TS]
+    ptVals=osipiutils.getOSIPiPoints(args,args.points_name_prefix,attrFields)
     
     # Map values to a flattened version indexed by timestamp
-    flattened=mapPointValues(ptVals,DEVICE_ATTR,point_attr_map)
+    flattened=osipiutils.mapPointValues(ptVals,func_osipi.DEVICE_ATTR,point_attr_map)
 
     # Get into DataFrame table form indexed by timestamp 
-    df=convertToEntities(flattened,args.date_field,DEVICE_ATTR)
-    print(df.head())
+    df=osipiutils.convertToEntities(flattened,args.date_field,func_osipi.DEVICE_ATTR)
+    #print(df.head())
 
     max_timestamp=df[args.date_field].max()
     logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)} {max_timestamp.timestamp()} {int(max_timestamp.timestamp()/1000)}")
@@ -43,14 +44,14 @@ def testPointsAPI(args):
 
 def testElementsAPI(args):
     ''' Test the pi Elements get function '''
-    from phg_iotfuncs.osipiutils import ATTR_FIELDS,getOSIPiElements,convertToEntities
-    from phg_iotfuncs.func_osipi import DEVICE_ATTR
+    from  phg_iotfuncs import osipiutils,func_osipi
 
-     # Fetch the Elements from OSIPi Server.
-    elemVals,rawElemsJSON=getOSIPiElements(args,args.parent_element_path,ATTR_FIELDS,DEVICE_ATTR,startTime=args.startTime)
+    # Fetch the Elements from OSIPi Server.
+    attrFields=[osipiutils.ATTR_FIELD_VAL,osipiutils.ATTR_FIELD_TS]
+    elemVals,rawElemsJSON=osipiutils.getOSIPiElements(args,args.parent_element_path,attrFields,func_osipi.DEVICE_ATTR,startTime=args.startTime)
 
     # Get into DataFrame table form indexed by timestamp 
-    df=convertToEntities(elemVals,args.date_field,DEVICE_ATTR)
+    df=osipiutils.convertToEntities(elemVals,args.date_field,func_osipi.DEVICE_ATTR)
     max_timestamp=df[args.date_field].max()
     logger.info(f"Read {len(df)} rows, timestamp from {df[args.date_field].min().isoformat()} to {df[args.date_field].max().isoformat()} ")
 
@@ -67,7 +68,7 @@ def main(argv):
     # Disable warnings when using self-signed certificates
     urllib3.disable_warnings()
     
-    from test_OSIPiPreload import addOSIPiArgs
+    import test_OSIPiPreload
     parser=argparse.ArgumentParser()
 
     parser.add_argument('operation',help=f"Operation to perform",choices=['list','test'])
@@ -77,7 +78,7 @@ def main(argv):
     parser.add_argument('-pathprefix',help='List Elements with this prefix only',default=None)
     parser.add_argument('-startTime',help='Start time',default=None)
 
-    addOSIPiArgs(argv[0],'credentials_osipi',parser)
+    test_OSIPiPreload.addOSIPiArgs(argv[0],'credentials_osipi',parser)
     args=parser.parse_args(argv[1:])
 
     if args.operation=='list':
@@ -108,7 +109,6 @@ def main(argv):
             logger.info(f"Writing ram JSON to {outFile}.json")
             with io.open(f"{outFile}.json",'w') as f:
                 f.write(pformat(rawElemsJSON))
-
 
 if __name__=='__main__':
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
