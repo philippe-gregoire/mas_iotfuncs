@@ -124,6 +124,10 @@ class PhGOSIElemsPreload(func_base.PhGCommonPreload):
         # Get into DataFrame table form indexed by timestamp 
         df=osipiutils.convertToEntities(elemVals,self.date_field,DEVICE_ATTR,logger=self.logger)
 
+        # Set format to the interval value
+        if self.interval:
+            df['format']=self.interval
+
         # Extract the highest sequence number
         max_timestamp=df[self.date_field].max()
         self.logger.info(f"Highest timestamp={max_timestamp} of type {type(max_timestamp)}")

@@ -150,7 +150,8 @@ def main(argv):
                         'osipi_user': args.piuser,
                         'osipi_pass': args.pipass, 
                         'date_field': args.date_field,
-                        'parent_element_path': args.parent_element_path
+                        'parent_element_path': args.parent_element_path,
+                        'interval': args.interval
                     },
                     func_output={'osipi_elements_preload_ok':'osipi_elements_preload_ok'})
 
